@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { StopWithDetails } from "@/types/database";
 import {
   Dialog,
@@ -41,7 +41,7 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
   onSave,
 }) => {
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("Custom Plan");
+  const [category, setCategory] = useState("Sightseeing");
   const [selectedStopId, setSelectedStopId] = useState<string>(
     defaultStopId || stops[0]?.id || ""
   );
@@ -51,23 +51,27 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
   const [notes, setNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  React.useEffect(() => {
-    if (defaultStopId) setSelectedStopId(defaultStopId);
-    setDayNumber(defaultDayNumber);
-  }, [defaultStopId, defaultDayNumber]);
+  useEffect(() => {
+    if (open) {
+      setSelectedStopId(defaultStopId || stops[0]?.id || "");
+      setDayNumber(defaultDayNumber || 1);
+    }
+  }, [open, defaultStopId, defaultDayNumber, stops]);
+
+  const effectiveStopId = selectedStopId || defaultStopId || stops[0]?.id || "";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !selectedStopId) return;
+    if (!title.trim() || !effectiveStopId) return;
 
     try {
       setIsSubmitting(true);
       await onSave({
-        stopId: selectedStopId,
+        stopId: effectiveStopId,
         title: title.trim(),
         category,
-        cost: Number(cost),
-        dayNumber: Number(dayNumber),
+        cost: Number(cost) || 0,
+        dayNumber: Number(dayNumber) || 1,
         scheduledTime: scheduledTime || undefined,
         notes: notes.trim() || undefined,
       });
@@ -101,72 +105,71 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
             </Label>
             <Input
               id="custom-title"
-              placeholder="e.g. Sunset Dinner at Cliffside Bistro, Museum Visit..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="text-xs h-9"
+              placeholder="e.g. Sunset Dinner at Fisherman's Wharf"
+              className="h-9 text-xs"
               required
             />
           </div>
 
-          {/* Category & Stop */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="custom-cat" className="text-xs font-medium">
-                Category
-              </Label>
-              <select
-                id="custom-cat"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="Food & Dining">Food & Dining</option>
-                <option value="Sightseeing">Sightseeing</option>
-                <option value="Adventure">Adventure</option>
-                <option value="Culture & History">Culture & History</option>
-                <option value="Nature">Nature</option>
-                <option value="Entertainment">Entertainment</option>
-                <option value="Wellness">Wellness</option>
-                <option value="Custom Plan">Custom Plan</option>
-              </select>
-            </div>
+          {/* Category */}
+          <div className="space-y-1.5">
+            <Label htmlFor="custom-category" className="text-xs font-medium">
+              Category
+            </Label>
+            <select
+              id="custom-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-background p-2 text-xs font-medium focus:border-primary-500 focus:outline-none"
+            >
+              <option value="Sightseeing">Sightseeing</option>
+              <option value="Food">Food & Dining</option>
+              <option value="Culture">Culture & History</option>
+              <option value="Adventure">Adventure & Outdoors</option>
+              <option value="Relaxation">Relaxation & Leisure</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Entertainment">Entertainment & Nightlife</option>
+            </select>
+          </div>
 
+          {/* Stop selector if multiple stops */}
+          {stops.length > 1 && (
             <div className="space-y-1.5">
               <Label htmlFor="custom-stop" className="text-xs font-medium flex items-center gap-1">
-                <MapPin className="h-3 w-3 text-primary-500" />
-                City Stop *
+                <MapPin className="h-3.5 w-3.5 text-primary-500" />
+                Destination City Stop
               </Label>
               <select
                 id="custom-stop"
-                value={selectedStopId}
+                value={effectiveStopId}
                 onChange={(e) => setSelectedStopId(e.target.value)}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
-                required
+                className="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-background p-2 text-xs font-medium focus:border-primary-500 focus:outline-none"
               >
-                {stops.map((stop) => (
-                  <option key={stop.id} value={stop.id}>
-                    {stop.city?.name || `Stop ${stop.stop_order + 1}`}
+                {stops.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.city?.name ? `${s.city.name}, ${s.city.country}` : `Stop ${s.stop_order + 1}`}
                   </option>
                 ))}
               </select>
             </div>
-          </div>
+          )}
 
-          {/* Day & Time */}
+          {/* Schedule Timing & Day */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="custom-day" className="text-xs font-medium flex items-center gap-1">
-                <Calendar className="h-3 w-3 text-primary-500" />
-                Day Number
+                <Calendar className="h-3.5 w-3.5 text-primary-500" />
+                Itinerary Day
               </Label>
               <select
                 id="custom-day"
                 value={dayNumber}
                 onChange={(e) => setDayNumber(Number(e.target.value))}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-background p-2 text-xs font-medium focus:border-primary-500 focus:outline-none"
               >
-                {Array.from({ length: Math.max(totalTripDays, 14) }).map((_, i) => (
+                {Array.from({ length: Math.max(totalTripDays, 1) }).map((_, i) => (
                   <option key={i + 1} value={i + 1}>
                     Day {i + 1}
                   </option>
@@ -176,7 +179,7 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
 
             <div className="space-y-1.5">
               <Label htmlFor="custom-time" className="text-xs font-medium flex items-center gap-1">
-                <Clock className="h-3 w-3 text-primary-500" />
+                <Clock className="h-3.5 w-3.5 text-primary-500" />
                 Time
               </Label>
               <Input
@@ -189,28 +192,28 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
             </div>
           </div>
 
-          {/* Cost */}
+          {/* Estimated Cost */}
           <div className="space-y-1.5">
             <Label htmlFor="custom-cost" className="text-xs font-medium flex items-center gap-1">
-              <DollarSign className="h-3 w-3 text-primary-500" />
-              Estimated Cost ($ USD)
+              <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+              Estimated Cost (₹)
             </Label>
             <Input
               id="custom-cost"
               type="number"
               min="0"
-              step="0.01"
+              step="1"
               value={cost}
               onChange={(e) => setCost(Number(e.target.value))}
               className="h-9 text-xs"
-              placeholder="0.00"
+              placeholder="0"
             />
           </div>
 
           {/* Notes */}
           <div className="space-y-1.5">
             <Label htmlFor="custom-notes" className="text-xs font-medium flex items-center gap-1">
-              <FileText className="h-3 w-3 text-primary-500" />
+              <FileText className="h-3.5 w-3.5 text-primary-500" />
               Notes / Location
             </Label>
             <Textarea
@@ -234,8 +237,8 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
             <Button
               type="submit"
               size="sm"
-              disabled={isSubmitting || !title.trim()}
-              className="gap-1.5"
+              disabled={isSubmitting || !title.trim() || !effectiveStopId}
+              className="gap-1.5 bg-primary-600 hover:bg-primary-700 text-white font-bold"
             >
               <Check className="h-4 w-4" />
               {isSubmitting ? "Creating..." : "Add Activity"}

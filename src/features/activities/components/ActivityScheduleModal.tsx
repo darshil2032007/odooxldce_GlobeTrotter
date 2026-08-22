@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { Activity, StopWithDetails } from "@/types/database";
 import {
   Dialog,
@@ -51,35 +51,32 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
   const [notes, setNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Sync state if activity changes
-  React.useEffect(() => {
-    if (activity) {
-      setCost(activity.estimated_cost);
-      if (defaultStopId) {
-        setSelectedStopId(defaultStopId);
-      } else if (stops.length > 0) {
-        // Find stop matching activity city if possible
-        const matchingStop = stops.find((s) => s.city_id === activity.city_id);
-        setSelectedStopId(matchingStop ? matchingStop.id : stops[0].id);
-      }
-      setDayNumber(defaultDayNumber);
+  // Sync state whenever modal opens or inputs change
+  useEffect(() => {
+    if (open && activity) {
+      setCost(activity.estimated_cost ?? 0);
+      const initialStopId = defaultStopId || stops[0]?.id || "";
+      setSelectedStopId(initialStopId);
+      setDayNumber(defaultDayNumber || 1);
     }
-  }, [activity, defaultStopId, defaultDayNumber, stops]);
+  }, [open, activity, defaultStopId, defaultDayNumber, stops]);
 
   if (!activity) return null;
 
+  const effectiveStopId = selectedStopId || defaultStopId || stops[0]?.id || "";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedStopId) return;
+    if (!effectiveStopId) return;
 
     try {
       setIsSubmitting(true);
       await onSchedule({
-        stopId: selectedStopId,
+        stopId: effectiveStopId,
         activityId: activity.id,
-        dayNumber: Number(dayNumber),
+        dayNumber: Number(dayNumber) || 1,
         scheduledTime: scheduledTime || undefined,
-        cost: Number(cost),
+        cost: Number(cost) || 0,
         notes: notes.trim() || undefined,
       });
       onOpenChange(false);
@@ -118,39 +115,40 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
               </Badge>
               <span className="text-xs text-surface-500">{activity.duration_hours}h duration</span>
             </div>
-            <h4 className="font-semibold text-sm text-surface-900 dark:text-surface-100 truncate mt-0.5">
+            <h4 className="font-bold text-sm text-surface-900 dark:text-surface-100 truncate mt-0.5">
               {activity.title}
             </h4>
-            <span className="text-xs font-semibold text-primary-600">
-              Est. Cost: {activity.estimated_cost === 0 ? "Free" : `$${activity.estimated_cost}`}
-            </span>
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
+              {activity.estimated_cost === 0 ? "Free" : `₹${activity.estimated_cost.toLocaleString("en-IN")}`}
+            </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          {/* Target Stop / City */}
-          <div className="space-y-1.5">
-            <Label htmlFor="sched-stop" className="text-xs font-medium flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-primary-500" />
-              City Destination Stop
-            </Label>
-            <select
-              id="sched-stop"
-              value={selectedStopId}
-              onChange={(e) => setSelectedStopId(e.target.value)}
-              className="w-full h-9 px-3 rounded-md border border-input bg-background text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
-              required
-            >
-              {stops.map((stop) => (
-                <option key={stop.id} value={stop.id}>
-                  Stop {stop.stop_order + 1}: {stop.city?.name} ({stop.city?.country})
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Target Stop selector */}
+          {stops.length > 1 && (
+            <div className="space-y-1.5">
+              <Label htmlFor="sched-stop" className="text-xs font-medium flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-primary-500" />
+                Destination City Stop
+              </Label>
+              <select
+                id="sched-stop"
+                value={effectiveStopId}
+                onChange={(e) => setSelectedStopId(e.target.value)}
+                className="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-background p-2 text-xs font-medium focus:border-primary-500 focus:outline-none"
+              >
+                {stops.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.city?.name ? `${s.city.name}, ${s.city.country}` : `Stop ${s.stop_order + 1}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          <div className="grid grid-cols-2 gap-4">
-            {/* Day Number */}
+          {/* Schedule Timing & Day */}
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="sched-day" className="text-xs font-medium flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5 text-primary-500" />
@@ -160,9 +158,9 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
                 id="sched-day"
                 value={dayNumber}
                 onChange={(e) => setDayNumber(Number(e.target.value))}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-background p-2 text-xs font-medium focus:border-primary-500 focus:outline-none"
               >
-                {Array.from({ length: Math.max(totalTripDays, 14) }).map((_, i) => (
+                {Array.from({ length: Math.max(totalTripDays, 1) }).map((_, i) => (
                   <option key={i + 1} value={i + 1}>
                     Day {i + 1}
                   </option>
@@ -170,7 +168,6 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
               </select>
             </div>
 
-            {/* Scheduled Time */}
             <div className="space-y-1.5">
               <Label htmlFor="sched-time" className="text-xs font-medium flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-primary-500" />
@@ -186,21 +183,21 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
             </div>
           </div>
 
-          {/* Cost Override */}
+          {/* Estimated Cost */}
           <div className="space-y-1.5">
             <Label htmlFor="sched-cost" className="text-xs font-medium flex items-center gap-1.5">
-              <DollarSign className="h-3.5 w-3.5 text-primary-500" />
-              Activity Cost ($ USD)
+              <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+              Estimated Cost (₹)
             </Label>
             <Input
               id="sched-cost"
               type="number"
               min="0"
-              step="0.01"
+              step="1"
               value={cost}
               onChange={(e) => setCost(Number(e.target.value))}
               className="h-9 text-xs"
-              placeholder="0.00"
+              placeholder="0"
             />
             <p className="text-[11px] text-surface-400">
               You can adjust the expected cost if you have special rates or group discounts.
@@ -235,11 +232,11 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
             <Button
               type="submit"
               size="sm"
-              disabled={isSubmitting || !selectedStopId}
-              className="gap-1.5"
+              disabled={isSubmitting || !effectiveStopId}
+              className="gap-1.5 bg-primary-600 hover:bg-primary-700 text-white font-bold"
             >
               <Check className="h-4 w-4" />
-              {isSubmitting ? "Adding..." : "Add to Itinerary"}
+              {isSubmitting ? "Scheduling..." : "Add to Itinerary"}
             </Button>
           </div>
         </form>
