@@ -196,6 +196,22 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
     await updateActivityMutation.mutateAsync({ id, updates });
   };
 
+  const handleReorderActivitiesInDay = async (
+    _dayNumber: number,
+    reorderedIds: string[]
+  ) => {
+    // When reordering within a day, update times sequentially (e.g. 09:00, 11:30, 14:00...)
+    const defaultTimes = ["09:00", "11:30", "14:00", "16:30", "19:00", "21:00"];
+    for (let i = 0; i < reorderedIds.length; i++) {
+      const id = reorderedIds[i];
+      const newTime = defaultTimes[i % defaultTimes.length];
+      await updateActivityMutation.mutateAsync({
+        id,
+        updates: { scheduled_time: newTime },
+      });
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-8">
       {/* 1. Trip Header Summary */}
@@ -250,6 +266,7 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
             onToggleComplete={handleToggleActivity}
             onDeleteActivity={handleDeleteActivity}
             onUpdateActivity={handleUpdateActivity}
+            onReorderActivitiesInDay={handleReorderActivitiesInDay}
           />
         </TabsContent>
 
