@@ -22,17 +22,23 @@ function sanitizeSupabaseUrl(rawUrl?: string): string {
 }
 
 const supabaseUrl = sanitizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL);
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || "placeholder-anon-key";
+const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || "";
+const supabaseAnonKey = rawKey || "placeholder-anon-key";
+
+// Check if the key is a standard JWT (starts with eyJ...) to determine if autoRefreshToken is safe
+const isStandardJwtKey = rawKey.startsWith("eyJ");
 
 /**
  * Shared Supabase client instance.
  * Single static instance used throughout the app.
+ *
+ * NOTE: autoRefreshToken is explicitly set to false unless a valid JWT key is provided
+ * to prevent Supabase JS SDK from running background auto-refresh loops (which fire thousands of requests).
  */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+    persistSession: isStandardJwtKey,
+    autoRefreshToken: isStandardJwtKey,
+    detectSessionInUrl: false,
   },
 });
