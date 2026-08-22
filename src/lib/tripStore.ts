@@ -492,12 +492,29 @@ export function saveAllStoredTrips(trips: TripWithDetails[]): void {
   }
 }
 
+const LEGACY_ID_MAP: Record<string, string> = {
+  "trip-1": "t0000000-0000-0000-0000-000000000001",
+  "trip-2": "t0000000-0000-0000-0000-000000000002",
+  "trip-3": "t0000000-0000-0000-0000-000000000003",
+  "trip-4": "t0000000-0000-0000-0000-000000000002",
+  "trip-5": "t0000000-0000-0000-0000-000000000001",
+};
+
 /**
  * Retrieve a specific trip by ID or share slug.
  */
 export function getStoredTrip(idOrSlug: string): TripWithDetails | null {
+  const resolvedId = LEGACY_ID_MAP[idOrSlug] || idOrSlug;
   const trips = getStoredTrips();
-  return trips.find((t) => t.id === idOrSlug || t.share_slug === idOrSlug) || null;
+  return (
+    trips.find(
+      (t) =>
+        t.id === resolvedId ||
+        t.id === idOrSlug ||
+        t.share_slug === idOrSlug ||
+        t.share_slug === resolvedId
+    ) || null
+  );
 }
 
 /**

@@ -52,7 +52,7 @@ export function TripDetailPage() {
   }
 
   // Derive consolidated live trip info
-  let trip: TripCardData | undefined = tripCard;
+  let trip: TripCardData | null | undefined = tripCard;
 
   if (tripDetails) {
     const today = new Date().toISOString().split("T")[0];

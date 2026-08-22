@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { TripCardData, CreateTripFormValues, BudgetSummary, TripStatus } from "@/types";
-import { getTrips, getTrip, createTrip, deleteTrip } from "@/services/data/trips";
+import { getTrips, getTrip, createTrip, deleteTrip, isValidUUID } from "@/services/data/trips";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -93,12 +93,12 @@ export function useTrips() {
 }
 
 export function useTrip(id: string) {
-  return useQuery<TripCardData | undefined>({
+  return useQuery<TripCardData | null>({
     queryKey: ["trip", id],
     queryFn: async () => {
-      if (!id) return undefined;
+      if (!id) return null;
 
-      if (isSupabaseConfigured) {
+      if (isSupabaseConfigured && isValidUUID(id)) {
         try {
           const remote = await getTrip(id);
           if (remote) {
@@ -114,7 +114,7 @@ export function useTrip(id: string) {
         return mapTripToCardData(local);
       }
 
-      return undefined;
+      return null;
     },
     enabled: !!id,
   });

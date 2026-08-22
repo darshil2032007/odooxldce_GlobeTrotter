@@ -7,13 +7,17 @@ import type {
   TripFilters,
 } from "@/types/database";
 
+export function isValidUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 /**
  * Fetch all trips accessible to current user with optional filtering & sorting.
  */
 export async function getTrips(filters?: TripFilters): Promise<Trip[]> {
   let query = supabase.from("trips").select("*");
 
-  if (filters?.userId) {
+  if (filters?.userId && isValidUUID(filters.userId)) {
     query = query.eq("user_id", filters.userId);
   }
 
@@ -62,6 +66,10 @@ export async function getTrips(filters?: TripFilters): Promise<Trip[]> {
  * Fetch a single trip by ID with all stops, cities, and scheduled activities.
  */
 export async function getTrip(id: string): Promise<TripWithDetails | null> {
+  if (!id || !isValidUUID(id)) {
+    return null;
+  }
+
   const { data, error } = await supabase
     .from("trips")
     .select(`
@@ -146,6 +154,8 @@ export async function createTrip(tripData: TripInsert): Promise<Trip> {
  * Update an existing trip by ID.
  */
 export async function updateTrip(id: string, tripUpdates: TripUpdate): Promise<Trip> {
+  if (!isValidUUID(id)) throw new Error("Invalid trip UUID");
+
   const { data, error } = await supabase
     .from("trips")
     .update(tripUpdates)
@@ -161,6 +171,7 @@ export async function updateTrip(id: string, tripUpdates: TripUpdate): Promise<T
  * Delete a trip by ID.
  */
 export async function deleteTrip(id: string): Promise<void> {
+  if (!isValidUUID(id)) return;
   const { error } = await supabase.from("trips").delete().eq("id", id);
   if (error) throw error;
 }
@@ -191,7 +202,7 @@ export async function getUpcomingTrips(userId?: string): Promise<Trip[]> {
     .gte("start_date", today)
     .order("start_date", { ascending: true });
 
-  if (userId) {
+  if (userId && isValidUUID(userId)) {
     query = query.eq("user_id", userId);
   }
 
@@ -210,7 +221,7 @@ export async function getRecentTrips(userId?: string): Promise<Trip[]> {
     .order("start_date", { ascending: false })
     .limit(5);
 
-  if (userId) {
+  if (userId && isValidUUID(userId)) {
     query = query.eq("user_id", userId);
   }
 
