@@ -1,269 +1,324 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Globe,
-  MapPin,
   Coins,
-  Users,
-  ArrowRight,
-  Plane,
   Sparkles,
   CheckCircle2,
-  ChevronRight,
+  Calendar,
+  Clock,
+  Compass,
+  ArrowRight,
+  TrendingDown,
+  Share2,
+  ShieldCheck,
+  BarChart3,
+  Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { AITripGeneratorModal } from "@/components/ai/AITripGeneratorModal";
+import { useAuth } from "@/hooks/useAuth";
+import { useCurrency } from "@/context/CurrencyContext";
 
-const features = [
+const CORE_FEATURES = [
   {
-    icon: MapPin,
-    title: "Multi-City Route Planner",
+    icon: Sparkles,
+    badge: "Gemini 2.5 Flash",
+    badgeColor: "bg-amber-400/10 text-amber-500 border-amber-400/30",
+    title: "Plan with Generative AI",
     description:
-      "Seamlessly string together global destinations, optimize travel dates, and calculate transfer times with precision.",
-    tag: "Route Engine",
+      "Describe your dream journey in plain words. Gemini synthesizes multi-city stops, day themes, and scheduled activities validated against verified catalog entities.",
+  },
+  {
+    icon: BarChart3,
+    badge: "Deterministic Math",
+    badgeColor: "bg-emerald-400/10 text-emerald-500 border-emerald-400/30",
+    title: "Zero-Hallucination Budget Engine",
+    description:
+      "Mathematical cost tracking, Recharts interactive donut & daily bar breakdowns, peak expense detection, and receipt tracking that never invents numbers.",
+  },
+  {
+    icon: TrendingDown,
+    badge: "Smart Assistant",
+    badgeColor: "bg-primary-400/10 text-primary-500 border-primary-400/30",
+    title: "Deficit Resolution & Optimizer",
+    description:
+      "Detects over-budget deficits instantly and provides 1-click catalog activity replacements that preserve sightseeing while saving thousands.",
+  },
+  {
+    icon: Bot,
+    badge: "Trip Copilot",
+    badgeColor: "bg-indigo-400/10 text-indigo-500 border-indigo-400/30",
+    title: "Context-Aware Travel Copilot",
+    description:
+      "Floating AI assistant embedded in your workspace. Ask about packing essentials, authentic street food spots, and pacing advice backed by verified trip context.",
+  },
+  {
+    icon: Calendar,
+    badge: "Itinerary Engine",
+    badgeColor: "bg-cyan-400/10 text-cyan-500 border-cyan-400/30",
+    title: "Timeline & Calendar Grid",
+    description:
+      "Day-by-day schedule breakdown, morning/afternoon/evening time blocks, stop reordering, and schedule validation alerts for seamless pacing.",
+  },
+  {
+    icon: Compass,
+    badge: "Weighted Algorithm",
+    badgeColor: "bg-rose-400/10 text-rose-500 border-rose-400/30",
+    title: "Destination Matchmaker",
+    description:
+      "4-factor deterministic scoring matching budget, travel style, duration, and interests with personalized Gemini reasoning for every city.",
+  },
+  {
+    icon: Share2,
+    badge: "Trip Sharing",
+    badgeColor: "bg-purple-400/10 text-purple-500 border-purple-400/30",
+    title: "Public Sharing & 1-Click Copy",
+    description:
+      "Generate clean, privacy-protected /share/:slug URLs for family & friends with 1-click deep cloning into your own itinerary builder.",
   },
   {
     icon: Coins,
-    title: "Dynamic Smart Budgeting",
+    badge: "Global Currency",
+    badgeColor: "bg-amber-400/10 text-amber-500 border-amber-400/30",
+    title: "Real-Time Multi-Currency",
     description:
-      "Track multi-currency expenses in real time and let intelligent algorithms prevent itinerary overspending.",
-    tag: "Finance AI",
-  },
-  {
-    icon: Sparkles,
-    title: "Curated Activity Catalog",
-    description:
-      "Explore hand-picked landmark sights, hidden culinary spots, and cultural experiences across 100+ cities.",
-    tag: "Experiences",
-  },
-  {
-    icon: Users,
-    title: "Real-Time Co-Planning",
-    description:
-      "Collaborate with travel companions, assign stop activities, and share interactive live itineraries effortlessly.",
-    tag: "Collaboration",
+      "Seamlessly switch display currency across INR (₹), USD ($), EUR (€), GBP (£), JPY (¥), AED, AUD, and CAD with live exchange rate conversion.",
   },
 ];
 
-const showcaseDestinations = [
+const SHOWCASE_DESTINATIONS = [
   {
-    name: "Amalfi Coast & Rome",
-    country: "Italy",
-    image: "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=800&auto=format&fit=crop&q=80",
-    days: "8 Days",
-    stops: "Rome • Positano • Capri",
-    cost: "$2,400",
+    name: "Goa Coastal Odyssey",
+    region: "Goa, India",
+    image: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&auto=format&fit=crop&q=80",
+    days: "5 Days",
+    stops: "Panaji • Calangute • Fort Aguada",
+    baseCostINR: 32000,
+    matchScore: 94,
+    style: "Relaxed & Food",
   },
   {
-    name: "Kyoto & Tokyo Golden Route",
-    country: "Japan",
-    image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800&auto=format&fit=crop&q=80",
-    days: "10 Days",
-    stops: "Tokyo • Hakone • Kyoto",
-    cost: "$3,150",
+    name: "Royal Rajasthan Heritage",
+    region: "Rajasthan, India",
+    image: "https://images.unsplash.com/photo-1599839575945-a9e5af0c3fa5?w=800&auto=format&fit=crop&q=80",
+    days: "6 Days",
+    stops: "Jaipur • Udaipur • Jodhpur",
+    baseCostINR: 42000,
+    matchScore: 91,
+    style: "Culture & Palaces",
   },
   {
-    name: "Swiss Alpine Journey",
-    country: "Switzerland",
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&auto=format&fit=crop&q=80",
-    days: "7 Days",
-    stops: "Zurich • Interlaken • Zermatt",
-    cost: "$2,850",
+    name: "Mumbai City of Dreams",
+    region: "Maharashtra, India",
+    image: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=800&auto=format&fit=crop&q=80",
+    days: "4 Days",
+    stops: "Marine Drive • Colaba • Bandra",
+    baseCostINR: 28000,
+    matchScore: 89,
+    style: "Urban & Dining",
   },
 ];
 
-const stats = [
-  { value: "50,000+", label: "Multi-City Trips Planned" },
-  { value: "120+", label: "Global Destinations" },
-  { value: "99.4%", label: "Schedule Precision Rate" },
-  { value: "4.9 / 5", label: "Traveler Satisfaction" },
+const STATS = [
+  { value: "100%", label: "Deterministic Accuracy" },
+  { value: "Gemini 2.5", label: "Generative AI Engine" },
+  { value: "8 Currencies", label: "Live Exchange Support" },
+  { value: "< 2.5s", label: "Instant Itinerary Synthesis" },
 ];
 
 export function LandingPage() {
+  const { user } = useAuth();
+  const { formatAmount } = useCurrency();
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-surface-50 text-surface-900 selection:bg-primary-500 selection:text-white">
+    <div className="min-h-screen bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 selection:bg-primary-500 selection:text-white">
       {/* 1. Header Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-surface-200/60 bg-white/80 backdrop-blur-md">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-surface-200/60 dark:border-surface-800/60 bg-white/85 dark:bg-surface-950/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary shadow-sm">
-              <Globe className="h-5 w-5 text-white" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-indigo-600 shadow-sm text-white">
+              <Globe className="h-5 w-5" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-surface-900 font-[var(--font-display)]">
-              GlobeTrotter
+            <span className="text-xl font-bold tracking-tight text-surface-900 dark:text-white font-[var(--font-display)]">
+              GlobeTrotter<span className="text-primary-500">.ai</span>
             </span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
             <a
               href="#features"
-              className="text-xs font-semibold uppercase tracking-wider text-surface-600 transition-colors hover:text-primary-600"
+              className="text-xs font-semibold uppercase tracking-wider text-surface-600 dark:text-surface-300 hover:text-primary-600 transition-colors"
             >
-              Platform Features
+              Features
             </a>
             <a
               href="#destinations"
-              className="text-xs font-semibold uppercase tracking-wider text-surface-600 transition-colors hover:text-primary-600"
+              className="text-xs font-semibold uppercase tracking-wider text-surface-600 dark:text-surface-300 hover:text-primary-600 transition-colors"
             >
               Destinations
             </a>
             <a
-              href="#stats"
-              className="text-xs font-semibold uppercase tracking-wider text-surface-600 transition-colors hover:text-primary-600"
+              href="#architecture"
+              className="text-xs font-semibold uppercase tracking-wider text-surface-600 dark:text-surface-300 hover:text-primary-600 transition-colors"
             >
-              Metrics
+              AI & Architecture
             </a>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild className="text-xs font-semibold">
-              <Link to="/login">Sign In</Link>
-            </Button>
-            <Button size="sm" variant="accent" asChild className="text-xs font-semibold shadow-glow">
-              <Link to="/signup">
-                Get Started <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </Link>
-            </Button>
+            {user ? (
+              <Button asChild className="gap-2 bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-md">
+                <Link to="/dashboard">
+                  <Compass className="h-4 w-4" />
+                  Go to Dashboard
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" asChild className="text-xs font-semibold">
+                  <Link to="/login">Sign in</Link>
+                </Button>
+                <Button
+                  onClick={() => setIsAIModalOpen(true)}
+                  className="gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-surface-950 font-bold shadow-md"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  ✨ Plan with AI
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </nav>
 
-      {/* 2. Hero Section with Live Itinerary Preview */}
-      <section className="relative overflow-hidden pt-24 pb-20 lg:pt-36 lg:pb-32">
-        {/* Background Gradients */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-accent-300/15 blur-3xl" />
-          <div className="absolute top-1/3 -left-40 h-[600px] w-[600px] rounded-full bg-primary-400/10 blur-3xl" />
-        </div>
-
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
-            {/* Left Column: Hero Text */}
-            <div className="space-y-6 text-center lg:text-left lg:col-span-7">
-              <div className="inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50/80 px-4 py-1.5 text-xs font-semibold text-accent-800 shadow-sm backdrop-blur-sm">
-                <Sparkles className="h-3.5 w-3.5 text-accent-600" />
-                <span>Next-Generation Travel Operating System</span>
+      {/* 2. Hero Section */}
+      <section className="relative overflow-hidden pt-32 pb-20 lg:pt-40 lg:pb-32 bg-gradient-to-b from-primary-500/5 via-transparent to-transparent">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Hero Left Column */}
+            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3.5 py-1.5 text-xs font-bold text-amber-600 dark:text-amber-300 shadow-xs">
+                <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
+                <span>Powered by Gemini 2.5 Flash & Deterministic Engine</span>
               </div>
 
-              <h1 className="text-4xl font-extrabold tracking-tight text-surface-900 sm:text-5xl lg:text-6xl font-[var(--font-display)] leading-[1.1]">
-                Master the Art of{" "}
-                <span className="text-gradient">Multi-City Travel</span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-surface-900 dark:text-white leading-[1.1] font-[var(--font-display)]">
+                The Intelligent Travel Planner That{" "}
+                <span className="bg-gradient-to-r from-primary-600 via-indigo-600 to-amber-500 bg-clip-text text-transparent">
+                  Reasons, Optimizes
+                </span>{" "}
+                & Never Overspends.
               </h1>
 
-              <p className="text-base sm:text-lg text-surface-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
-                Craft day-wise itineraries across multiple countries, balance budgets automatically,
-                and discover curated activities with an intelligent companion designed for modern explorers.
+              <p className="text-base sm:text-lg text-surface-600 dark:text-surface-300 leading-relaxed max-w-2xl mx-auto lg:mx-0">
+                Synthesize custom multi-city itineraries in seconds with Gemini AI, balance daily pacing on interactive calendar timelines, and eliminate budget deficits with mathematical precision.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
-                <Button size="lg" variant="accent" asChild className="w-full sm:w-auto text-sm font-semibold shadow-elevated gap-2 px-6 py-6">
-                  <Link to="/signup">
-                    <span>Create Your First Trip</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
+                <Button
+                  size="lg"
+                  onClick={() => setIsAIModalOpen(true)}
+                  className="w-full sm:w-auto gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-surface-950 font-extrabold px-8 py-6 text-base shadow-xl hover:shadow-orange-500/20 hover:scale-105 transition-all"
+                >
+                  <Sparkles className="h-5 w-5" />
+                  ✨ Plan with AI Now
                 </Button>
-                <Button size="lg" variant="outline" asChild className="w-full sm:w-auto text-sm font-semibold border-surface-300 px-6 py-6">
-                  <Link to="/login">
-                    <span>Explore Live Demo</span>
+
+                <Button
+                  size="lg"
+                  variant="outline"
+                  asChild
+                  className="w-full sm:w-auto gap-2 border-surface-300 dark:border-surface-700 font-bold px-8 py-6 text-base hover:bg-surface-100 dark:hover:bg-surface-900"
+                >
+                  <Link to="/trips">
+                    Explore Sample Trips
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
               </div>
 
-              {/* Trust Indicators */}
-              <div className="pt-6 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-surface-500 font-medium">
+              {/* Trust Features */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4 text-xs font-semibold text-surface-500">
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <span>No credit card required</span>
+                  <span>Deterministic Arithmetic</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <span>Real-time budget tracking</span>
+                  <ShieldCheck className="h-4 w-4 text-primary-500" />
+                  <span>Real Database Catalogs</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <span>Offline calendar sync</span>
+                  <Coins className="h-4 w-4 text-amber-500" />
+                  <span>Multi-Currency Active</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Column: Handcrafted Glassmorphic Itinerary Preview */}
-            <div className="lg:col-span-5 relative">
-              <div className="relative mx-auto max-w-md rounded-3xl border border-surface-200/80 bg-white p-6 shadow-elevated backdrop-blur-xl">
-                {/* Trip Card Header */}
-                <div className="flex items-center justify-between pb-4 border-b border-surface-100">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-bold">
-                      <Plane className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-sm text-surface-900">Mediterranean Odyssey</h3>
-                      <p className="text-xs text-surface-500">12 Days • 3 Cities Planned</p>
-                    </div>
+            {/* Hero Right Column: Live Interactive Preview Widget */}
+            <div className="lg:col-span-5">
+              <div className="relative rounded-3xl border border-surface-200/80 dark:border-surface-800 bg-white/90 dark:bg-surface-900/90 p-5 shadow-2xl backdrop-blur-xl space-y-4">
+                {/* Header preview bar */}
+                <div className="flex items-center justify-between border-b border-surface-100 dark:border-surface-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-3 w-3 rounded-full bg-rose-500" />
+                    <span className="flex h-3 w-3 rounded-full bg-amber-500" />
+                    <span className="flex h-3 w-3 rounded-full bg-emerald-500" />
+                    <span className="text-xs font-bold ml-2 text-surface-700 dark:text-surface-300 font-mono">
+                      Goa Coastal Expedition
+                    </span>
                   </div>
-                  <Badge variant="default" className="text-[11px]">
-                    Upcoming
+                  <Badge className="bg-primary-600 text-white text-[10px] py-0 px-2">
+                    5 Days • 94% Match
                   </Badge>
                 </div>
 
-                {/* Stops Timeline */}
-                <div className="py-5 space-y-4">
-                  {/* Stop 1 */}
-                  <div className="flex items-start gap-3.5 relative">
-                    <div className="flex flex-col items-center">
-                      <div className="h-7 w-7 rounded-full bg-primary-500 text-white text-xs font-bold flex items-center justify-center">
-                        1
-                      </div>
-                      <div className="w-0.5 h-12 bg-surface-200 my-1" />
+                {/* Live Itinerary Timeline Snippet */}
+                <div className="space-y-2.5">
+                  <div className="rounded-xl bg-surface-50 dark:bg-surface-800/50 p-3 border border-surface-200/60 dark:border-surface-800 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between font-bold text-surface-900 dark:text-surface-100">
+                      <span>Day 1: Old Goa Portuguese Heritage</span>
+                      <span className="text-emerald-600 dark:text-emerald-400">{formatAmount(350)}</span>
                     </div>
-                    <div className="flex-1 bg-surface-50 rounded-2xl p-3 border border-surface-100">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs text-surface-900">Barcelona, Spain</span>
-                        <span className="text-[10px] text-surface-500 font-medium">Days 1 - 4</span>
-                      </div>
-                      <p className="text-[11px] text-surface-500 mt-1">Sagrada Família & Gothic Quarter Tour</p>
+                    <div className="text-[11px] text-surface-500 flex items-center gap-3">
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> 09:30 AM</span>
+                      <span>Basilica of Bom Jesus Guided Tour</span>
                     </div>
                   </div>
 
-                  {/* Stop 2 */}
-                  <div className="flex items-start gap-3.5 relative">
-                    <div className="flex flex-col items-center">
-                      <div className="h-7 w-7 rounded-full bg-accent-500 text-white text-xs font-bold flex items-center justify-center">
-                        2
-                      </div>
-                      <div className="w-0.5 h-12 bg-surface-200 my-1" />
+                  <div className="rounded-xl bg-surface-50 dark:bg-surface-800/50 p-3 border border-surface-200/60 dark:border-surface-800 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between font-bold text-surface-900 dark:text-surface-100">
+                      <span>Day 2: Coastal Sunset & Shacks</span>
+                      <span className="text-emerald-600 dark:text-emerald-400">{formatAmount(650)}</span>
                     </div>
-                    <div className="flex-1 bg-surface-50 rounded-2xl p-3 border border-surface-100">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs text-surface-900">Nice & Monaco, France</span>
-                        <span className="text-[10px] text-surface-500 font-medium">Days 5 - 8</span>
-                      </div>
-                      <p className="text-[11px] text-surface-500 mt-1">Promenade des Anglais & Coastal Drive</p>
-                    </div>
-                  </div>
-
-                  {/* Stop 3 */}
-                  <div className="flex items-start gap-3.5">
-                    <div className="h-7 w-7 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">
-                      3
-                    </div>
-                    <div className="flex-1 bg-surface-50 rounded-2xl p-3 border border-surface-100">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs text-surface-900">Florence, Italy</span>
-                        <span className="text-[10px] text-surface-500 font-medium">Days 9 - 12</span>
-                      </div>
-                      <p className="text-[11px] text-surface-500 mt-1">Uffizi Gallery & Tuscan Wine Tasting</p>
+                    <div className="text-[11px] text-surface-500 flex items-center gap-3">
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> 05:00 PM</span>
+                      <span>Anjuna Beach Sunset & Local Seafood</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Card Footer Metrics */}
-                <div className="rounded-2xl bg-surface-900 p-3.5 text-white flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] text-white/60 uppercase tracking-wider font-semibold">Budget Health</span>
-                    <p className="text-sm font-bold text-emerald-400">$3,200 of $4,000 target</p>
+                {/* Live Budget Gauge */}
+                <div className="rounded-2xl bg-gradient-to-br from-surface-900 to-indigo-950 p-4 text-white space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="text-amber-300 flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Smart Budget Health
+                    </span>
+                    <span className="text-emerald-400">91% On Track</span>
                   </div>
-                  <Badge variant="secondary" className="bg-white/10 text-white text-xs">
-                    80% Spent
-                  </Badge>
+
+                  <div className="flex items-baseline justify-between text-sm">
+                    <span className="text-surface-400 text-xs">Total Estimated:</span>
+                    <span className="text-lg font-black text-white">{formatAmount(32000)} / {formatAmount(35000)}</span>
+                  </div>
+
+                  <div className="h-2 w-full rounded-full bg-white/20 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full" style={{ width: "91%" }} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -271,41 +326,17 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* 3. Platform Capabilities Section */}
-      <section id="features" className="py-20 bg-white border-y border-surface-200/70">
+      {/* 3. Stats Strip */}
+      <section className="border-y border-surface-200/80 dark:border-surface-800 bg-white dark:bg-surface-900/60 py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center space-y-3">
-            <Badge variant="outline" className="text-xs font-semibold uppercase tracking-wider text-primary-600">
-              Architected for Perfection
-            </Badge>
-            <h2 className="text-3xl font-bold tracking-tight text-surface-900 sm:text-4xl font-[var(--font-display)]">
-              Everything You Need to Plan Without Friction
-            </h2>
-            <p className="text-sm sm:text-base text-surface-500">
-              Transform chaotic travel bookmarks and spreadsheets into a clean, unified workspace.
-            </p>
-          </div>
-
-          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((item, idx) => (
-              <div
-                key={idx}
-                className="group relative overflow-hidden rounded-3xl border border-surface-200/80 bg-surface-50/50 p-6 transition-all duration-300 hover:-translate-y-1.5 hover:bg-white hover:shadow-elevated"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 group-hover:bg-primary-500 group-hover:text-white transition-colors duration-300">
-                  <item.icon className="h-6 w-6" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {STATS.map((stat, idx) => (
+              <div key={idx} className="space-y-1">
+                <div className="text-2xl sm:text-3xl font-black text-primary-600 dark:text-primary-400 font-[var(--font-display)]">
+                  {stat.value}
                 </div>
-
-                <div className="mt-6 space-y-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600">
-                    {item.tag}
-                  </span>
-                  <h3 className="text-base font-bold text-surface-900 font-[var(--font-display)]">
-                    {item.title}
-                  </h3>
-                  <p className="text-xs text-surface-500 leading-relaxed">
-                    {item.description}
-                  </p>
+                <div className="text-xs font-semibold text-surface-500 uppercase tracking-wider">
+                  {stat.label}
                 </div>
               </div>
             ))}
@@ -313,64 +344,123 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* 4. Showcase Curated Journeys */}
-      <section id="destinations" className="py-20 bg-surface-50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      {/* 4. Complete Features Grid */}
+      <section id="features" className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+        <div className="text-center space-y-4 max-w-3xl mx-auto">
+          <Badge className="bg-primary-500/10 text-primary-600 dark:text-primary-400 border-primary-500/30 text-xs py-1">
+            Built for Modern Explorers
+          </Badge>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-surface-900 dark:text-white font-[var(--font-display)]">
+            Everything You Need to Plan, Optimize & Share Multi-City Travel
+          </h2>
+          <p className="text-sm sm:text-base text-surface-600 dark:text-surface-400 leading-relaxed">
+            A harmonious fusion of Gemini Generative AI reasoning and mathematically verified budget calculation engines.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {CORE_FEATURES.map((feat, idx) => {
+            const Icon = feat.icon;
+            return (
+              <Card
+                key={idx}
+                className="group rounded-3xl border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden"
+              >
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="rounded-2xl bg-primary-500/10 p-3 text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <Badge variant="outline" className={`text-[10px] py-0.5 px-2 font-bold ${feat.badgeColor}`}>
+                      {feat.badge}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-base font-bold text-surface-900 dark:text-surface-100 font-[var(--font-display)]">
+                      {feat.title}
+                    </h3>
+                    <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">
+                      {feat.description}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 5. Showcase Destinations Section */}
+      <section id="destinations" className="py-20 bg-surface-100/50 dark:bg-surface-900/30 border-y border-surface-200 dark:border-surface-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
-            <div>
-              <Badge variant="outline" className="text-xs font-semibold uppercase tracking-wider text-accent-600">
-                Curated Itineraries
-              </Badge>
-              <h2 className="text-3xl font-bold tracking-tight text-surface-900 sm:text-4xl font-[var(--font-display)] mt-2">
-                Popular Multi-City Routes
+            <div className="space-y-2">
+              <h2 className="text-2xl sm:text-3xl font-black text-surface-900 dark:text-white font-[var(--font-display)]">
+                Featured AI-Synthesized Expeditions
               </h2>
+              <p className="text-xs sm:text-sm text-surface-500">
+                Explore real multi-city itineraries with dynamic pricing formatted in your active currency.
+              </p>
             </div>
-            <Button variant="ghost" asChild className="gap-1 text-primary-600 font-semibold text-xs">
-              <Link to="/cities">
-                Browse All Destinations <ChevronRight className="h-4 w-4" />
-              </Link>
+
+            <Button
+              onClick={() => setIsAIModalOpen(true)}
+              className="gap-2 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs"
+            >
+              <Sparkles className="h-4 w-4" />
+              Generate Your Own
             </Button>
           </div>
 
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {showcaseDestinations.map((dest, idx) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {SHOWCASE_DESTINATIONS.map((dest, idx) => (
               <div
                 key={idx}
-                className="group relative overflow-hidden rounded-3xl border border-surface-200 bg-white shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:shadow-elevated"
+                className="group rounded-3xl border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col"
               >
-                <div className="relative h-60 w-full overflow-hidden bg-surface-900">
+                <div className="relative h-48 w-full overflow-hidden bg-surface-800">
                   <img
                     src={dest.image}
                     alt={dest.name}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90"
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute top-4 left-4">
-                    <Badge variant="secondary" className="bg-black/60 text-white backdrop-blur-md text-[11px]">
-                      {dest.days}
+                  <div className="absolute top-3 right-3">
+                    <Badge className="bg-emerald-500 text-white text-xs font-bold shadow-md">
+                      {dest.matchScore}% Match
                     </Badge>
                   </div>
-                  <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <span className="text-xs font-medium text-white/80">{dest.country}</span>
-                    <h3 className="text-lg font-bold truncate">{dest.name}</h3>
+                  <div className="absolute bottom-3 left-3 text-white">
+                    <span className="text-[11px] text-accent-300 font-medium block">{dest.region}</span>
+                    <h4 className="text-base font-extrabold">{dest.name}</h4>
                   </div>
                 </div>
 
-                <div className="p-5 space-y-3">
-                  <p className="text-xs text-surface-500 flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 text-accent-500 shrink-0" />
-                    <span className="truncate">{dest.stops}</span>
-                  </p>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-surface-100">
-                    <div>
-                      <span className="text-[10px] text-surface-400 font-medium">Estimated Budget</span>
-                      <p className="text-sm font-bold text-surface-900">{dest.cost}</p>
+                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2 text-xs text-surface-500">
+                    <div className="flex items-center justify-between font-semibold">
+                      <span>{dest.days}</span>
+                      <span className="text-primary-600 dark:text-primary-400 font-bold">{dest.style}</span>
                     </div>
-                    <Button asChild size="sm" variant="outline" className="text-xs gap-1">
-                      <Link to="/signup">
-                        View Plan <ArrowRight className="h-3 w-3" />
-                      </Link>
+                    <p className="text-[11px] text-surface-400 truncate">{dest.stops}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-surface-100 dark:border-surface-800">
+                    <div>
+                      <span className="text-[10px] text-surface-400 block uppercase">Est. Total</span>
+                      <span className="text-base font-black text-surface-900 dark:text-surface-100">
+                        {formatAmount(dest.baseCostINR)}
+                      </span>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      onClick={() => setIsAIModalOpen(true)}
+                      className="text-xs font-bold gap-1 bg-surface-900 hover:bg-surface-800 text-white dark:bg-surface-100 dark:text-surface-900"
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      Plan Similar
                     </Button>
                   </div>
                 </div>
@@ -380,49 +470,60 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* 5. Metrics Strip */}
-      <section id="stats" className="py-16 bg-surface-900 text-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 grid-cols-2 lg:grid-cols-4 text-center">
-            {stats.map((stat, idx) => (
-              <div key={idx} className="space-y-1">
-                <span className="text-3xl sm:text-4xl font-extrabold text-accent-400 font-[var(--font-display)]">
-                  {stat.value}
-                </span>
-                <p className="text-xs sm:text-sm text-surface-300 font-medium">{stat.label}</p>
-              </div>
-            ))}
+      {/* 6. Call to Action Footer Banner */}
+      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-surface-900 via-surface-950 to-primary-950 p-8 sm:p-14 text-white text-center space-y-6 shadow-2xl border border-surface-800">
+          <div className="inline-flex items-center gap-2 rounded-full bg-amber-400/20 px-4 py-1 text-xs font-bold text-amber-300 ring-1 ring-amber-400/30">
+            <Sparkles className="h-4 w-4 text-amber-400" />
+            <span>Ready for your next expedition?</span>
+          </div>
+
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tight font-[var(--font-display)] max-w-2xl mx-auto">
+            Design Your Perfect Multi-City Itinerary in Seconds.
+          </h2>
+
+          <p className="text-surface-300 text-sm sm:text-base max-w-xl mx-auto">
+            Join thousands of travelers who plan with zero spreadsheet headaches and AI-powered accuracy.
+          </p>
+
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button
+              size="lg"
+              onClick={() => setIsAIModalOpen(true)}
+              className="w-full sm:w-auto gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-surface-950 font-extrabold px-8 py-6 text-base shadow-xl"
+            >
+              <Sparkles className="h-5 w-5" />
+              ✨ Start Planning with AI
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 font-bold px-8 py-6 text-base"
+            >
+              <Link to="/login">Sign In / Register</Link>
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* 6. CTA Footer Section */}
-      <section className="py-20 bg-white">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl gradient-hero p-8 text-center text-white shadow-elevated sm:p-12">
-            <div className="relative z-10 space-y-4 max-w-2xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight font-[var(--font-display)]">
-                Ready to Experience Stress-Free Travel Planning?
-              </h2>
-              <p className="text-sm sm:text-base text-white/85">
-                Join thousands of globe-trotters organizing their next dream journey today.
-              </p>
-              <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Button size="lg" variant="accent" asChild className="w-full sm:w-auto text-sm font-semibold shadow-glow">
-                  <Link to="/signup">Start Free Today</Link>
-                </Button>
-              </div>
-            </div>
+      {/* 7. Footer */}
+      <footer className="border-t border-surface-200 dark:border-surface-800 py-8 bg-white dark:bg-surface-950 text-xs text-surface-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-primary-500" />
+            <span className="font-bold text-surface-800 dark:text-surface-200">GlobeTrotter AI</span>
+            <span>• Intelligent Multi-City Travel Planner</span>
           </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-surface-200 bg-surface-50 py-8 text-center text-xs text-surface-500">
-        <div className="mx-auto max-w-7xl px-4">
-          <p>© 2026 GlobeTrotter AI. Built with precision for modern travelers.</p>
+          <p>© {new Date().getFullYear()} GlobeTrotter AI. All rights reserved.</p>
         </div>
       </footer>
+
+      {/* AI Trip Modal */}
+      <AITripGeneratorModal
+        open={isAIModalOpen}
+        onOpenChange={setIsAIModalOpen}
+      />
     </div>
   );
 }

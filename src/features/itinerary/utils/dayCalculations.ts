@@ -5,7 +5,10 @@ import type { DayPlan } from "../types";
  * Parses date string (YYYY-MM-DD) into local midnight Date to avoid timezone shift.
  */
 export function parseLocalDate(dateStr: string): Date {
-  const [year, month, day] = dateStr.split("-").map(Number);
+  const parts = dateStr.split("T")[0].split("-").map(Number);
+  const year = parts[0] || new Date().getFullYear();
+  const month = parts[1] || 1;
+  const day = parts[2] || 1;
   return new Date(year, month - 1, day);
 }
 
@@ -74,14 +77,27 @@ export function deriveItineraryDays(
     stop: StopWithDetails;
   }[] = [];
 
+  let maxExplicitDay = 0;
+
   stops.forEach((stop) => {
     (stop.stop_activities || []).forEach((sa) => {
+      // Normalize day number
+      const dayNum = Number(sa.day_number) > 0 ? Number(sa.day_number) : 1;
+      if (dayNum > maxExplicitDay) {
+        maxExplicitDay = dayNum;
+      }
       allActivitiesWithStop.push({
-        activity: sa,
+        activity: {
+          ...sa,
+          day_number: dayNum,
+        },
         stop,
       });
     });
   });
+
+  // Ensure total days accommodates all scheduled activities
+  totalDays = Math.max(totalDays, maxExplicitDay, 1);
 
   // Build each DayPlan
   const days: DayPlan[] = [];

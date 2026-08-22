@@ -33,6 +33,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useCurrency, type CurrencyCode } from "@/context/CurrencyContext";
 import { toast } from "sonner";
 
 const PRESET_AVATARS = [
@@ -44,18 +45,20 @@ const PRESET_AVATARS = [
 ];
 
 const CURRENCIES = [
-  { code: "USD", symbol: "$", label: "US Dollar (USD)" },
-  { code: "EUR", symbol: "€", label: "Euro (EUR)" },
-  { code: "GBP", symbol: "£", label: "British Pound (GBP)" },
-  { code: "INR", symbol: "₹", label: "Indian Rupee (INR)" },
-  { code: "JPY", symbol: "¥", label: "Japanese Yen (JPY)" },
-  { code: "AUD", symbol: "A$", label: "Australian Dollar (AUD)" },
-  { code: "CAD", symbol: "C$", label: "Canadian Dollar (CAD)" },
+  { code: "INR", label: "INR", symbol: "₹" },
+  { code: "USD", label: "USD", symbol: "$" },
+  { code: "EUR", label: "EUR", symbol: "€" },
+  { code: "GBP", label: "GBP", symbol: "£" },
+  { code: "JPY", label: "JPY", symbol: "¥" },
+  { code: "AED", label: "AED", symbol: "AED" },
+  { code: "AUD", label: "AUD", symbol: "A$" },
+  { code: "CAD", label: "CAD", symbol: "C$" },
 ];
 
-export const SettingsPage: React.FC = () => {
+export function SettingsPage() {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const updateProfileMutation = useUpdateProfile();
+  const { currency, setCurrency } = useCurrency();
 
   // Profile form state
   const [fullName, setFullName] = useState(
@@ -75,7 +78,7 @@ export const SettingsPage: React.FC = () => {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   // Preferences state
-  const [selectedCurrency, setSelectedCurrency] = useState("USD");
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(currency);
   const [travelPace, setTravelPace] = useState("balanced");
   const [unitSystem, setUnitSystem] = useState("metric");
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -407,8 +410,12 @@ export const SettingsPage: React.FC = () => {
                   </label>
                   <select
                     value={selectedCurrency}
-                    onChange={(e) => setSelectedCurrency(e.target.value)}
-                    className="w-full rounded-xl border border-surface-200 bg-white p-2.5 text-sm font-medium text-surface-900 focus:border-primary-500 focus:outline-none"
+                    onChange={(e) => {
+                      setSelectedCurrency(e.target.value);
+                      setCurrency(e.target.value as CurrencyCode);
+                      toast.success(`Currency switched to ${e.target.value}`);
+                    }}
+                    className="w-full rounded-xl border border-surface-200 bg-white dark:bg-surface-900 dark:border-surface-800 p-2.5 text-sm font-medium text-surface-900 dark:text-surface-100 focus:border-primary-500 focus:outline-none"
                   >
                     {CURRENCIES.map((c) => (
                       <option key={c.code} value={c.code}>

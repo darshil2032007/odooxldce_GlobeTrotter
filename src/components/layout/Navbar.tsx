@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Bell,
-  Search,
   Menu,
   LogOut,
   User,
@@ -24,6 +22,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { MobileSidebarContent } from "@/components/layout/Sidebar";
+import { NotificationDropdown } from "./NotificationDropdown";
+import { CurrencySwitcher } from "./CurrencySwitcher";
 
 interface NavbarProps {
   sidebarCollapsed: boolean;
@@ -32,105 +32,82 @@ interface NavbarProps {
 export function Navbar({ sidebarCollapsed }: NavbarProps) {
   const { user, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
 
   const displayName = user?.user_metadata?.full_name || user?.email || "Traveler";
 
   return (
     <>
       <header
-        className="fixed top-0 right-0 z-30 flex h-16 items-center border-b border-surface-200 bg-white/80 backdrop-blur-md transition-all duration-300"
+        className="fixed top-0 right-0 z-30 flex h-16 items-center border-b border-surface-200 dark:border-surface-800 bg-white/80 dark:bg-surface-950/80 backdrop-blur-md transition-all duration-300"
         style={{
           left: sidebarCollapsed ? "72px" : "260px",
         }}
       >
         <div className="flex w-full items-center justify-between px-4 lg:px-6">
-          {/* Mobile menu button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          {/* Left: Mobile menu button and branding indicator */}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
 
-          {/* Search bar */}
-          <div className="hidden flex-1 md:block md:max-w-md">
-            {searchOpen ? (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
-                <input
-                  type="text"
-                  placeholder="Search trips, destinations..."
-                  className="h-9 w-full rounded-lg border border-surface-300 bg-surface-50 pl-9 pr-4 text-sm text-surface-700 placeholder:text-surface-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                  autoFocus
-                  onBlur={() => setSearchOpen(false)}
-                />
-              </div>
-            ) : (
-              <Button
-                variant="ghost"
-                className="gap-2 text-surface-500"
-                onClick={() => setSearchOpen(true)}
-              >
-                <Search className="h-4 w-4" />
-                <span className="text-sm">Search...</span>
-                <kbd className="ml-4 hidden rounded bg-surface-100 px-1.5 py-0.5 text-xs text-surface-400 lg:inline-block">
-                  ⌘K
-                </kbd>
-              </Button>
-            )}
+            <span className="hidden sm:inline-block text-xs font-semibold text-surface-500">
+              GlobeTrotter AI Workspace
+            </span>
           </div>
 
-          {/* Right side actions */}
-          <div className="flex items-center gap-2">
-            {/* Notifications placeholder */}
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5 text-surface-500" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-accent-500" />
-            </Button>
+          {/* Right side actions: Currency Switcher + Notifications + User profile */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Global Currency Switcher */}
+            <CurrencySwitcher />
+
+            {/* Notifications Center */}
+            <NotificationDropdown />
 
             {/* User dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2 px-2">
-                  <Avatar className="h-8 w-8">
+                <Button variant="ghost" className="gap-2 px-2 h-9 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-900">
+                  <Avatar className="h-7 w-7 border border-surface-200 dark:border-surface-700">
                     <AvatarImage src={user?.user_metadata?.avatar_url} />
-                    <AvatarFallback className="text-xs">
+                    <AvatarFallback className="text-xs font-bold bg-primary-50 text-primary-700">
                       {getInitials(displayName)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden text-sm font-medium text-surface-700 md:inline-block">
+                  <span className="hidden text-xs font-semibold text-surface-700 dark:text-surface-200 md:inline-block max-w-[120px] truncate">
                     {displayName}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 rounded-2xl border-surface-200 dark:border-surface-800 shadow-xl">
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium">{displayName}</span>
-                    <span className="text-xs text-surface-400">{user?.email}</span>
+                    <span className="text-xs font-bold text-surface-900 dark:text-surface-100">{displayName}</span>
+                    <span className="text-[11px] text-surface-400 truncate">{user?.email}</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuItem asChild>
-                    <Link to="/profile">
-                      <User className="mr-2 h-4 w-4" />
+                    <Link to="/profile" className="text-xs font-medium cursor-pointer">
+                      <User className="mr-2 h-3.5 w-3.5 text-surface-500" />
                       Profile
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/settings">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
+                    <Link to="/settings" className="text-xs font-medium cursor-pointer">
+                      <Settings className="mr-2 h-3.5 w-3.5 text-surface-500" />
+                      Settings & Preferences
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="text-danger-600">
-                  <LogOut className="mr-2 h-4 w-4" />
+                <DropdownMenuItem onClick={signOut} className="text-xs font-semibold text-danger-600 cursor-pointer">
+                  <LogOut className="mr-2 h-3.5 w-3.5" />
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
