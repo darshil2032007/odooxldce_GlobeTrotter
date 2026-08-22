@@ -10,6 +10,8 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { TripsPage } from "@/pages/TripsPage";
 import { CreateTripPage } from "@/pages/CreateTripPage";
 import { TripDetailPage } from "@/pages/TripDetailPage";
+import { CitiesPage } from "@/pages/CitiesPage";
+import { ActivitiesPage } from "@/pages/ActivitiesPage";
 
 export const router = createBrowserRouter([
   // Public routes
@@ -34,6 +36,8 @@ export const router = createBrowserRouter([
       { path: "/trips", element: <TripsPage /> },
       { path: "/trips/new", element: <CreateTripPage /> },
       { path: "/trips/:id", element: <TripDetailPage /> },
+      { path: "/cities", element: <CitiesPage /> },
+      { path: "/activities", element: <ActivitiesPage /> },
       // Fallback for settings or unhandled inside shell
       { path: "/settings", element: <DashboardPage /> },
     ],

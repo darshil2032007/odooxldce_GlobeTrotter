@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Calendar,
@@ -21,6 +21,9 @@ import { ItineraryBuilder } from "@/features/itinerary";
 
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "overview";
+
   const { data: trip, isLoading, isError, refetch } = useTrip(id || "");
 
   if (isLoading) {
@@ -43,9 +46,17 @@ export function TripDetailPage() {
       ? Math.min(Math.round((trip.budgetSpent / trip.budgetTarget) * 100), 100)
       : 0;
 
+  const handleTabChange = (val: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", val);
+      return next;
+    });
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-      {/* Top back button */}
+    <div className="space-y-6 animate-fade-in pb-16">
+      {/* Top back button & breadcrumbs */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" asChild className="gap-1 text-surface-500">
           <Link to="/trips">
@@ -57,7 +68,7 @@ export function TripDetailPage() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="gap-1.5">
             <Share2 className="h-3.5 w-3.5" />
-            Share
+            Share Trip
           </Button>
           <Badge variant="default" className="capitalize">
             {trip.status}
@@ -66,7 +77,7 @@ export function TripDetailPage() {
       </div>
 
       {/* Hero Banner Header */}
-      <div className="relative h-64 sm:h-80 w-full overflow-hidden rounded-2xl bg-surface-900 shadow-elevated">
+      <div className="relative h-64 sm:h-80 w-full overflow-hidden rounded-3xl bg-surface-900 shadow-elevated">
         <img
           src={
             trip.coverImage ||
@@ -75,10 +86,10 @@ export function TripDetailPage() {
           alt={trip.name}
           className="h-full w-full object-cover opacity-75"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
 
         <div className="absolute bottom-6 left-6 right-6 text-white space-y-2">
-          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight drop-shadow-md">
+          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight drop-shadow-md font-[var(--font-display)]">
             {trip.name}
           </h1>
           {trip.description && (
@@ -88,15 +99,15 @@ export function TripDetailPage() {
           )}
 
           <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-white/90 pt-2">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 backdrop-blur-sm">
               <Calendar className="h-4 w-4 text-accent-400" />
               <span>{formatDateRange(trip.startDate, trip.endDate)}</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 backdrop-blur-sm">
               <Clock className="h-4 w-4 text-accent-400" />
-              <span>{durationDays} days</span>
+              <span>{durationDays} Days</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 backdrop-blur-sm">
               <MapPin className="h-4 w-4 text-accent-400" />
               <span>{trip.destinationCount} Destinations</span>
             </div>
@@ -105,29 +116,29 @@ export function TripDetailPage() {
       </div>
 
       {/* Main Tabs Layout */}
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-full justify-start border-b border-surface-200 bg-transparent p-0 gap-6 rounded-none">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className="w-full justify-start border-b border-surface-200 bg-transparent p-0 gap-6 rounded-none overflow-x-auto">
           <TabsTrigger
             value="overview"
-            className="border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:bg-transparent rounded-none px-1 py-3"
+            className="border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:text-primary-600 data-[state=active]:bg-transparent rounded-none px-1 py-3 font-semibold"
           >
             Overview
           </TabsTrigger>
           <TabsTrigger
             value="itinerary"
-            className="border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:bg-transparent rounded-none px-1 py-3"
+            className="border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:text-primary-600 data-[state=active]:bg-transparent rounded-none px-1 py-3 font-semibold"
           >
-            Itinerary
+            Itinerary & Schedule
           </TabsTrigger>
           <TabsTrigger
             value="budget"
-            className="border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:bg-transparent rounded-none px-1 py-3"
+            className="border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:text-primary-600 data-[state=active]:bg-transparent rounded-none px-1 py-3 font-semibold"
           >
             Budget & Expenses
           </TabsTrigger>
           <TabsTrigger
             value="sharing"
-            className="border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:bg-transparent rounded-none px-1 py-3"
+            className="border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:text-primary-600 data-[state=active]:bg-transparent rounded-none px-1 py-3 font-semibold"
           >
             Sharing & Collaborators
           </TabsTrigger>
@@ -137,7 +148,7 @@ export function TripDetailPage() {
         <TabsContent value="overview" className="mt-6 space-y-6">
           <div className="grid gap-6 md:grid-cols-3">
             {/* Quick Metrics */}
-            <Card>
+            <Card className="shadow-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-surface-500 font-medium">
                   Budget Health
@@ -148,7 +159,7 @@ export function TripDetailPage() {
                   <span className="text-2xl font-bold text-surface-900">
                     {formatCurrency(trip.budgetSpent)}
                   </span>
-                  <span className="text-xs text-surface-500">
+                  <span className="text-xs text-surface-500 font-medium">
                     Target: {formatCurrency(trip.budgetTarget)}
                   </span>
                 </div>
@@ -159,7 +170,7 @@ export function TripDetailPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="shadow-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-surface-500 font-medium">
                   Stops & Destinations
@@ -175,7 +186,7 @@ export function TripDetailPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="shadow-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-surface-500 font-medium">
                   Trip Duration
@@ -194,7 +205,7 @@ export function TripDetailPage() {
           </div>
 
           {/* Description Card */}
-          <Card>
+          <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="text-base font-semibold">About This Trip</CardTitle>
             </CardHeader>
@@ -211,7 +222,7 @@ export function TripDetailPage() {
           <ItineraryBuilder tripId={id || trip.id} />
         </TabsContent>
 
-        {/* Budget Tab — Reserved for Developer 4 */}
+        {/* Budget Tab */}
         <TabsContent value="budget" className="mt-6">
           <Card className="border-dashed border-2 border-surface-200 bg-surface-50/50">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
@@ -229,7 +240,7 @@ export function TripDetailPage() {
           </Card>
         </TabsContent>
 
-        {/* Sharing Tab — Reserved for Developer 4 */}
+        {/* Sharing Tab */}
         <TabsContent value="sharing" className="mt-6">
           <Card className="border-dashed border-2 border-surface-200 bg-surface-50/50">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
