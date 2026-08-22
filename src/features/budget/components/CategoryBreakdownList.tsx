@@ -37,7 +37,6 @@ const getCategoryIcon = (category: string) => {
 
 export function CategoryBreakdownList({
   categories,
-  totalCost,
 }: CategoryBreakdownListProps) {
   if (categories.length === 0) return null;
 

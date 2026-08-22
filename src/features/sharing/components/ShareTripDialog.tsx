@@ -8,9 +8,7 @@ import {
   Lock,
   ExternalLink,
   MessageCircle,
-  Twitter,
   Mail,
-  QrCode,
 } from "lucide-react";
 import {
   Dialog,
@@ -20,7 +18,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { enableTripSharing, disableTripSharing } from "../services/sharingService";
 import { toast } from "sonner";
@@ -87,18 +84,6 @@ export function ShareTripDialog({
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
 
-  const handleShareTwitter = () => {
-    const text = encodeURIComponent(
-      `Planning my journey: "${trip.title}" on GlobeTrotter AI! 🌍✈️`
-    );
-    window.open(
-      `https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(
-        shareUrl
-      )}`,
-      "_blank"
-    );
-  };
-
   const handleShareEmail = () => {
     const subject = encodeURIComponent(`Travel Itinerary: ${trip.title}`);
     const body = encodeURIComponent(
@@ -149,14 +134,24 @@ export function ShareTripDialog({
               </div>
             </div>
 
-            <Switch
+            {/* Custom accessible toggle */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={trip.is_public}
               id="public-toggle"
-              checked={trip.is_public}
-              onCheckedChange={(checked) =>
-                toggleShareMutation.mutate(checked)
-              }
+              onClick={() => toggleShareMutation.mutate(!trip.is_public)}
               disabled={toggleShareMutation.isPending}
-            />
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+                trip.is_public ? "bg-emerald-500" : "bg-surface-300 dark:bg-surface-700"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  trip.is_public ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
           </div>
 
           {/* Link Section (Active if public) */}
@@ -204,15 +199,6 @@ export function ShareTripDialog({
                   >
                     <MessageCircle className="h-3.5 w-3.5" />
                     WhatsApp
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleShareTwitter}
-                    className="flex-1 gap-1.5 text-xs font-medium text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/20"
-                  >
-                    <Twitter className="h-3.5 w-3.5" />
-                    X (Twitter)
                   </Button>
                   <Button
                     variant="outline"

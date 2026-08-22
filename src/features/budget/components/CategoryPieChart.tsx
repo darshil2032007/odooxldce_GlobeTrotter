@@ -116,7 +116,7 @@ export function CategoryPieChart({
               </Pie>
               <Tooltip content={<CustomTooltip />} />
               <Legend
-                formatter={(value: string, entry) => {
+                formatter={(value: string) => {
                   const item = chartData.find((c) => c.category === value);
                   return (
                     <span className="text-xs font-medium text-surface-700 dark:text-surface-300">

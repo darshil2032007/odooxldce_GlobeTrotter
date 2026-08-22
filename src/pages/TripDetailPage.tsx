@@ -6,8 +6,6 @@ import {
   MapPin,
   Clock,
   Share2,
-  Users,
-  Wallet,
 } from "lucide-react";
 import { useTrip } from "@/hooks/useTrips";
 import { useTripDetails } from "@/features/itinerary/hooks/useItinerary";

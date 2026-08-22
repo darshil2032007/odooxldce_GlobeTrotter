@@ -7,19 +7,14 @@ import {
   MapPin,
   Copy,
   Compass,
-  Sparkles,
   Lock,
   ArrowRight,
   Receipt,
-  Layers,
-  CheckCircle2,
-  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/ui/LoadingSpinner";
-import { ErrorState } from "@/components/ui/ErrorState";
 import { getPublicTripBySlug } from "@/features/sharing/services/sharingService";
 import { cloneTrip } from "@/features/sharing/services/cloneTripService";
 import { calculateTripBudget } from "@/features/budget/engine/calculator";
@@ -38,7 +33,6 @@ export function PublicTripPage() {
     data: trip,
     isLoading,
     isError,
-    refetch,
   } = useQuery({
     queryKey: ["public-trip", slug],
     queryFn: async () => {

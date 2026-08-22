@@ -1,5 +1,3 @@
-import type { TripWithDetails } from "@/types/database";
-
 export interface PublicTripData {
   id: string;
   title: string;

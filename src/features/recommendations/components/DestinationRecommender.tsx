@@ -2,16 +2,13 @@ import { useState } from "react";
 import {
   Sparkles,
   SlidersHorizontal,
-  Compass,
-  MapPin,
   RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { ScoredDestinationCard } from "./ScoredDestinationCard";
 import { useRecommendations } from "../hooks/useRecommendations";
-import type { TravelStyle, ScoredDestination } from "../types";
+import type { TravelStyle, ScoredDestination, UserPreferences } from "../types";
 import { formatCurrency } from "@/lib/utils";
 
 const INTEREST_TAGS = [
@@ -47,10 +44,10 @@ export function DestinationRecommender({
   const [showFilters, setShowFilters] = useState(false);
 
   const toggleInterest = (tag: string) => {
-    setPreferences((prev) => {
+    setPreferences((prev: UserPreferences) => {
       const exists = prev.interests.includes(tag);
       const nextInterests = exists
-        ? prev.interests.filter((t) => t !== tag)
+        ? prev.interests.filter((t: string) => t !== tag)
         : [...prev.interests, tag];
       return { ...prev, interests: nextInterests };
     });
@@ -108,7 +105,7 @@ export function DestinationRecommender({
                 step="5000"
                 value={preferences.targetBudget}
                 onChange={(e) =>
-                  setPreferences((prev) => ({
+                  setPreferences((prev: UserPreferences) => ({
                     ...prev,
                     targetBudget: Number(e.target.value),
                   }))
@@ -139,7 +136,7 @@ export function DestinationRecommender({
                 step="1"
                 value={preferences.durationDays}
                 onChange={(e) =>
-                  setPreferences((prev) => ({
+                  setPreferences((prev: UserPreferences) => ({
                     ...prev,
                     durationDays: Number(e.target.value),
                   }))
@@ -164,7 +161,7 @@ export function DestinationRecommender({
                     key={style.id}
                     type="button"
                     onClick={() =>
-                      setPreferences((prev) => ({
+                      setPreferences((prev: UserPreferences) => ({
                         ...prev,
                         travelStyle: style.id,
                       }))

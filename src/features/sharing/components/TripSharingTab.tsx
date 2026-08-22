@@ -1,19 +1,16 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Share2,
   Globe,
   Lock,
   Copy,
   Check,
-  ExternalLink,
+  Eye,
   ShieldCheck,
   Users,
-  Eye,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { enableTripSharing, disableTripSharing } from "../services/sharingService";
@@ -113,13 +110,23 @@ export function TripSharingTab({ trip }: TripSharingTabProps) {
             <span className="text-xs font-semibold text-surface-600 dark:text-surface-400">
               {trip.is_public ? "Enabled" : "Disabled"}
             </span>
-            <Switch
-              checked={trip.is_public}
-              onCheckedChange={(checked) =>
-                toggleShareMutation.mutate(checked)
-              }
+            {/* Custom accessible toggle */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={trip.is_public}
+              onClick={() => toggleShareMutation.mutate(!trip.is_public)}
               disabled={toggleShareMutation.isPending}
-            />
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+                trip.is_public ? "bg-emerald-500" : "bg-surface-300 dark:bg-surface-700"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  trip.is_public ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
           </div>
         </CardHeader>
 

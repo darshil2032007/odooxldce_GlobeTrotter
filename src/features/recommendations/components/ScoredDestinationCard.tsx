@@ -1,4 +1,4 @@
-import { MapPin, Sparkles, TrendingUp, Compass, ArrowRight } from "lucide-react";
+import { MapPin, Sparkles, Compass } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ export function ScoredDestinationCard({
   destination,
   onSelect,
 }: ScoredDestinationCardProps) {
-  const { city, score, breakdown, estimatedTotalCost, estimatedDailyCost, matchingInterests, fitLabel } = destination;
+  const { city, score, breakdown, estimatedTotalCost, estimatedDailyCost, matchingInterests } = destination;
 
   const getScoreColor = () => {
     if (score >= 85) return "text-emerald-500 border-emerald-500/30 bg-emerald-500/10";
@@ -112,7 +112,7 @@ export function ScoredDestinationCard({
         {/* Matching Interest Tags */}
         {matchingInterests.length > 0 && (
           <div className="flex flex-wrap gap-1 pt-1">
-            {matchingInterests.map((interest) => (
+            {matchingInterests.map((interest: string) => (
               <Badge
                 key={interest}
                 variant="outline"

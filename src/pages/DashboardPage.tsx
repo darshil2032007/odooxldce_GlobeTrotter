@@ -13,7 +13,6 @@ import {
   useBudgetSummary,
   useDeleteTrip,
 } from "@/hooks/useTrips";
-import { MOCK_RECOMMENDED_DESTINATIONS } from "@/lib/mock-data";
 import { toast } from "sonner";
 import type { TripCardData } from "@/types";
 

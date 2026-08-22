@@ -3,17 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Sparkles,
   AlertTriangle,
-  ArrowRight,
   TrendingDown,
   CheckCircle2,
-  HelpCircle,
   RefreshCw,
-  Compass,
 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";

@@ -12,7 +12,6 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/utils";
 import type { TripBudgetCalculation } from "../types";
 

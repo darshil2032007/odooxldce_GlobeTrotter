@@ -1,5 +1,3 @@
-import type { Activity } from "@/types/database";
-
 export type SuggestionType =
   | "replace_activity"
   | "free_alternative"
