@@ -23,6 +23,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageLoader } from "@/components/ui/LoadingSpinner";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Calendar, MapPin, Clock } from "lucide-react";
+import { toast } from "sonner";
 import type { City, TripWithDetails } from "@/types/database";
 
 interface ItineraryBuilderProps {
@@ -117,12 +118,17 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
 
   // Handlers
   const handleAddStop = async (city: City, arrivalDate?: string, departureDate?: string) => {
-    await createStopMutation.mutateAsync({
-      trip_id: trip.id,
-      city_id: city.id,
-      arrival_date: arrivalDate || null,
-      departure_date: departureDate || null,
-    });
+    try {
+      await createStopMutation.mutateAsync({
+        trip_id: trip.id,
+        city_id: city.id,
+        arrival_date: arrivalDate || null,
+        departure_date: departureDate || null,
+      });
+      toast.success(`Added ${city.name} to trip itinerary!`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add stop");
+    }
   };
 
   const handleUpdateStopDates = async (
@@ -130,24 +136,44 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
     arrivalDate?: string | null,
     departureDate?: string | null
   ) => {
-    await updateStopMutation.mutateAsync({
-      id: stopId,
-      updates: {
-        arrival_date: arrivalDate,
-        departure_date: departureDate,
-      },
-    });
+    try {
+      await updateStopMutation.mutateAsync({
+        id: stopId,
+        updates: {
+          arrival_date: arrivalDate,
+          departure_date: departureDate,
+        },
+      });
+      toast.success("Updated stop dates");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update stop");
+    }
   };
 
   const handleDeleteStop = async (stopId: string) => {
-    await deleteStopMutation.mutateAsync(stopId);
+    try {
+      await deleteStopMutation.mutateAsync(stopId);
+      toast.success("Destination stop removed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete stop");
+    }
   };
 
   const handleReorderStops = async (newOrder: { id: string; stop_order: number }[]) => {
-    await reorderStopsMutation.mutateAsync(newOrder);
+    try {
+      await reorderStopsMutation.mutateAsync(newOrder);
+      toast.success("Updated stop sequence");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to reorder stops");
+    }
   };
 
   const handleOpenActivitySearchForDay = (dayNumber: number, stopId?: string) => {
+    if (!trip.stops || trip.stops.length === 0) {
+      toast.info("Please add a destination city stop before scheduling activities.");
+      setIsCitySearchOpen(true);
+      return;
+    }
     setSelectedTargetDayNumber(dayNumber);
     setSelectedTargetStopId(stopId || trip.stops[0]?.id);
     setIsActivitySearchOpen(true);
@@ -182,7 +208,12 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
   };
 
   const handleDeleteActivity = async (id: string) => {
-    await deleteActivityMutation.mutateAsync(id);
+    try {
+      await deleteActivityMutation.mutateAsync(id);
+      toast.success("Activity removed from schedule");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove activity");
+    }
   };
 
   const handleUpdateActivity = async (
@@ -201,7 +232,6 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
     _dayNumber: number,
     reorderedIds: string[]
   ) => {
-    // When reordering within a day, update times sequentially (e.g. 09:00, 11:30, 14:00...)
     const defaultTimes = ["09:00", "11:30", "14:00", "16:30", "19:00", "21:00"];
     for (let i = 0; i < reorderedIds.length; i++) {
       const id = reorderedIds[i];
@@ -213,6 +243,8 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
     }
   };
 
+  const stopsCount = trip.stops ? trip.stops.length : 0;
+
   return (
     <div className="space-y-6 animate-fade-in pb-8">
       {/* 1. Trip Header Summary */}
@@ -223,6 +255,11 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
         totalCost={totalCost}
         onAddStop={() => setIsCitySearchOpen(true)}
         onAddActivity={() => {
+          if (!trip.stops || trip.stops.length === 0) {
+            toast.info("Please add a destination city stop first.");
+            setIsCitySearchOpen(true);
+            return;
+          }
           setSelectedTargetStopId(trip.stops[0]?.id);
           setIsActivitySearchOpen(true);
         }}
@@ -247,7 +284,7 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
               className="text-xs font-medium gap-1.5 px-3 py-1.5 rounded-lg"
             >
               <MapPin className="h-3.5 w-3.5" />
-              City Stops ({trip.stops.length})
+              City Stops ({stopsCount})
             </TabsTrigger>
             <TabsTrigger
               value="timeline"
@@ -305,17 +342,17 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
         onAddStop={handleAddStop}
         tripStartDate={trip.start_date}
         tripEndDate={trip.end_date}
-        existingCityIds={trip.stops.map((s) => s.city_id)}
+        existingCityIds={(trip.stops || []).map((s) => s.city_id)}
       />
 
       {/* Global Activity Search Dialog */}
       <ActivitySearchDialog
         open={isActivitySearchOpen}
         onOpenChange={setIsActivitySearchOpen}
-        stops={trip.stops}
+        stops={trip.stops || []}
         defaultStopId={selectedTargetStopId}
         defaultDayNumber={selectedTargetDayNumber}
-        totalTripDays={derivedDays.length}
+        totalTripDays={derivedDays.length || 7}
         onScheduleActivity={handleScheduleActivity}
       />
     </div>

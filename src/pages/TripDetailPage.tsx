@@ -23,6 +23,7 @@ import { BudgetOverview } from "@/features/budget";
 import { TripSharingTab, ShareTripDialog } from "@/features/sharing";
 import { AITravelCopilotDrawer } from "@/components/ai/AITravelCopilotDrawer";
 import { AIOptimizeTripModal } from "@/components/ai/AIOptimizeTripModal";
+import type { TripCardData, TripStatus } from "@/types";
 
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,19 +33,77 @@ export function TripDetailPage() {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isOptimizeModalOpen, setIsOptimizeModalOpen] = useState(false);
 
-  const { data: trip, isLoading, isError, refetch } = useTrip(id || "");
-  const { data: tripDetails } = useTripDetails(id || "");
+  const {
+    data: tripCard,
+    isLoading: isTripLoading,
+    refetch: refetchTrip,
+  } = useTrip(id || "");
+
+  const {
+    data: tripDetails,
+    isLoading: isDetailsLoading,
+    refetch: refetchDetails,
+  } = useTripDetails(id || "");
+
+  const isLoading = isTripLoading && isDetailsLoading;
 
   if (isLoading) {
     return <PageLoader />;
   }
 
-  if (isError || !trip) {
+  // Derive consolidated live trip info
+  let trip: TripCardData | undefined = tripCard;
+
+  if (tripDetails) {
+    const today = new Date().toISOString().split("T")[0];
+    let status: TripStatus = "upcoming";
+    if (tripDetails.end_date < today) {
+      status = "completed";
+    } else if (tripDetails.start_date <= today && tripDetails.end_date >= today) {
+      status = "ongoing";
+    }
+
+    const activitySpent = (tripDetails.stops || []).reduce(
+      (acc, s) =>
+        acc +
+        (s.stop_activities || []).reduce(
+          (aSum, sa) => aSum + Number(sa.cost || 0),
+          0
+        ),
+      0
+    );
+
+    const expenseSpent = (tripDetails.expenses || []).reduce(
+      (acc, e) => acc + Number(e.amount || 0),
+      0
+    );
+
+    const totalSpent = activitySpent + expenseSpent;
+
+    trip = {
+      id: tripDetails.id,
+      name: tripDetails.title,
+      description: tripDetails.description || undefined,
+      startDate: tripDetails.start_date,
+      endDate: tripDetails.end_date,
+      coverImage: tripDetails.cover_image_url || tripCard?.coverImage,
+      destinationCount: tripDetails.stops?.length ?? 0,
+      budgetTarget: Number(tripDetails.target_budget || 0),
+      budgetSpent: totalSpent > 0 ? totalSpent : (tripCard?.budgetSpent || 0),
+      status,
+      createdAt: tripDetails.created_at,
+    };
+  }
+
+  if (!trip) {
     return (
       <ErrorState
         title="Trip not found"
         message="The requested trip details could not be loaded."
-        onRetry={refetch}
+        onRetry={() => {
+          refetchTrip();
+          refetchDetails();
+        }}
       />
     );
   }
@@ -141,9 +200,9 @@ export function TripDetailPage() {
         </div>
       </div>
 
-      {/* Main Tabs Layout */}
+      {/* Tabs navigation */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="w-full justify-start border-b border-surface-200 bg-transparent p-0 gap-6 rounded-none overflow-x-auto">
+        <TabsList className="grid w-full grid-cols-4 bg-surface-100 dark:bg-surface-900 border-b border-surface-200 dark:border-surface-800 rounded-xl p-1">
           <TabsTrigger
             value="overview"
             className="border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:text-primary-600 data-[state=active]:bg-transparent rounded-none px-1 py-3 font-semibold"
@@ -182,7 +241,7 @@ export function TripDetailPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-bold text-surface-900">
+                  <span className="text-2xl font-bold text-surface-900 dark:text-surface-100">
                     {formatCurrency(trip.budgetSpent)}
                   </span>
                   <span className="text-xs text-surface-500 font-medium">
@@ -203,7 +262,7 @@ export function TripDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-surface-900">
+                <div className="text-2xl font-bold text-surface-900 dark:text-surface-100">
                   {trip.destinationCount} Cities
                 </div>
                 <p className="text-xs text-surface-500 mt-1">
@@ -219,7 +278,7 @@ export function TripDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-surface-900">
+                <div className="text-2xl font-bold text-surface-900 dark:text-surface-100">
                   {durationDays} Days
                 </div>
                 <p className="text-xs text-surface-500 mt-1">
@@ -236,7 +295,7 @@ export function TripDetailPage() {
               <CardTitle className="text-base font-semibold">About This Trip</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-surface-600 leading-relaxed">
+              <p className="text-sm text-surface-600 dark:text-surface-400 leading-relaxed">
                 {trip.description || "No description provided for this trip yet."}
               </p>
             </CardContent>
