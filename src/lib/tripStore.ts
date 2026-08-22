@@ -2,7 +2,6 @@ import type {
   TripWithDetails,
   StopWithDetails,
   StopActivityWithDetails,
-  City,
   TripInsert,
   StopInsert,
   StopUpdate,
@@ -14,7 +13,7 @@ import type {
 import { FALLBACK_CITIES } from "@/features/cities/data/fallbackCities";
 import { FALLBACK_ACTIVITIES } from "@/features/activities/data/fallbackActivities";
 
-const STORAGE_KEY = "globetrotter_trips_store_v1";
+const STORAGE_KEY = "globetrotter_trips_store_v2";
 
 function generateUUID(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -36,12 +35,16 @@ function createInitialTrips(): TripWithDetails[] {
   const goa = FALLBACK_CITIES.find((c) => c.name === "Goa") || FALLBACK_CITIES[2];
   const ahmedabad = FALLBACK_CITIES.find((c) => c.name === "Ahmedabad") || FALLBACK_CITIES[0];
   const mumbai = FALLBACK_CITIES.find((c) => c.name === "Mumbai") || FALLBACK_CITIES[1];
+  const manali = FALLBACK_CITIES.find((c) => c.name === "Manali") || FALLBACK_CITIES[6];
+  const bangalore = FALLBACK_CITIES.find((c) => c.name === "Bangalore") || FALLBACK_CITIES[3];
 
   const actDelhi = FALLBACK_ACTIVITIES.filter((a) => a.city_id === delhi.id);
   const actJaipur = FALLBACK_ACTIVITIES.filter((a) => a.city_id === jaipur.id);
   const actGoa = FALLBACK_ACTIVITIES.filter((a) => a.city_id === goa.id);
   const actAhm = FALLBACK_ACTIVITIES.filter((a) => a.city_id === ahmedabad.id);
   const actMum = FALLBACK_ACTIVITIES.filter((a) => a.city_id === mumbai.id);
+  const actManali = FALLBACK_ACTIVITIES.filter((a) => a.city_id === manali.id);
+  const actBlr = FALLBACK_ACTIVITIES.filter((a) => a.city_id === bangalore.id);
 
   const now = new Date();
   const formatOffsetDate = (days: number) => {
@@ -60,6 +63,12 @@ function createInitialTrips(): TripWithDetails[] {
   const trip3Id = "t0000000-0000-0000-0000-000000000003";
   const t3Stop1Id = "s0000000-0000-0000-0003-000000000001";
   const t3Stop2Id = "s0000000-0000-0000-0003-000000000002";
+
+  const trip4Id = "t0000000-0000-0000-0000-000000000004";
+  const t4Stop1Id = "s0000000-0000-0000-0004-000000000001";
+
+  const trip5Id = "t0000000-0000-0000-0000-000000000005";
+  const t5Stop1Id = "s0000000-0000-0000-0005-000000000001";
 
   return [
     // Trip 1: UPCOMING & PUBLIC (Delhi -> Jaipur)
@@ -119,15 +128,15 @@ function createInitialTrips(): TripWithDetails[] {
             {
               id: "sa-1-3",
               stop_id: t1Stop1Id,
-              activity_id: actDelhi[4]?.id || null,
-              day_number: 2,
-              scheduled_time: "18:30",
-              cost: actDelhi[4]?.estimated_cost ?? 22,
-              notes: "Rooftop table reserved overlooking Hauz Khas reservoir.",
+              activity_id: actDelhi[2]?.id || null,
+              day_number: 3,
+              scheduled_time: "17:30",
+              cost: actDelhi[2]?.estimated_cost ?? 0,
+              notes: "Sunset picnic overlooking the lawns.",
               is_completed: false,
               created_at: now.toISOString(),
               updated_at: now.toISOString(),
-              activity: actDelhi[4] || null,
+              activity: actDelhi[2] || null,
             },
           ],
         },
@@ -147,9 +156,9 @@ function createInitialTrips(): TripWithDetails[] {
               stop_id: t1Stop2Id,
               activity_id: actJaipur[0]?.id || null,
               day_number: 4,
-              scheduled_time: "10:00",
-              cost: actJaipur[0]?.estimated_cost ?? 10,
-              notes: "Guided expedition inside Sheesh Mahal.",
+              scheduled_time: "08:30",
+              cost: actJaipur[0]?.estimated_cost ?? 7,
+              notes: "Early morning jeep to avoid elephant rush.",
               is_completed: false,
               created_at: now.toISOString(),
               updated_at: now.toISOString(),
@@ -160,9 +169,9 @@ function createInitialTrips(): TripWithDetails[] {
               stop_id: t1Stop2Id,
               activity_id: actJaipur[1]?.id || null,
               day_number: 5,
-              scheduled_time: "09:00",
-              cost: actJaipur[1]?.estimated_cost ?? 12,
-              notes: "Best early morning golden light for photography.",
+              scheduled_time: "10:00",
+              cost: actJaipur[1]?.estimated_cost ?? 4,
+              notes: "Rooftop photography from Wind View Cafe.",
               is_completed: false,
               created_at: now.toISOString(),
               updated_at: now.toISOString(),
@@ -171,11 +180,24 @@ function createInitialTrips(): TripWithDetails[] {
             {
               id: "sa-1-6",
               stop_id: t1Stop2Id,
-              activity_id: actJaipur[3]?.id || null,
+              activity_id: actJaipur[2]?.id || null,
               day_number: 5,
               scheduled_time: "19:30",
-              cost: actJaipur[3]?.estimated_cost ?? 20,
-              notes: "Authentic Rajasthani village fair and dal baati feast.",
+              cost: actJaipur[2]?.estimated_cost ?? 18,
+              notes: "Traditional Gatte ki Sabzi and Dal Baati Churma.",
+              is_completed: false,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              activity: actJaipur[2] || null,
+            },
+            {
+              id: "sa-1-7",
+              stop_id: t1Stop2Id,
+              activity_id: actJaipur[3]?.id || null,
+              day_number: 6,
+              scheduled_time: "15:00",
+              cost: actJaipur[3]?.estimated_cost ?? 0,
+              notes: "Shop for blue pottery, block print textiles, and mojris.",
               is_completed: false,
               created_at: now.toISOString(),
               updated_at: now.toISOString(),
@@ -193,7 +215,7 @@ function createInitialTrips(): TripWithDetails[] {
           category: "Transport",
           amount: 85,
           currency: "USD",
-          description: "Delhi to Jaipur AC Superfast Train Tickets",
+          description: "Private AC Cab (Delhi to Jaipur Express Highway)",
           date: formatOffsetDate(17),
           created_at: now.toISOString(),
           updated_at: now.toISOString(),
@@ -204,23 +226,10 @@ function createInitialTrips(): TripWithDetails[] {
           stop_id: t1Stop2Id,
           activity_id: null,
           category: "Accommodation",
-          amount: 450,
+          amount: 525,
           currency: "USD",
-          description: "Jaipur Heritage Haveli (4 nights)",
+          description: "Heritage Haveli Stay in Old Jaipur",
           date: formatOffsetDate(17),
-          created_at: now.toISOString(),
-          updated_at: now.toISOString(),
-        },
-        {
-          id: "exp-1-3",
-          trip_id: trip1Id,
-          stop_id: t1Stop1Id,
-          activity_id: null,
-          category: "Food",
-          amount: 40,
-          currency: "USD",
-          description: "Welcome Dinner in Connaught Place",
-          date: formatOffsetDate(14),
           created_at: now.toISOString(),
           updated_at: now.toISOString(),
         },
@@ -262,7 +271,7 @@ function createInitialTrips(): TripWithDetails[] {
               day_number: 1,
               scheduled_time: "10:00",
               cost: actGoa[0]?.estimated_cost ?? 2,
-              notes: "Visit Basilica of Bom Jesus relics.",
+              notes: "Dress respectfully with covered shoulders.",
               is_completed: true,
               created_at: now.toISOString(),
               updated_at: now.toISOString(),
@@ -275,7 +284,7 @@ function createInitialTrips(): TripWithDetails[] {
               day_number: 2,
               scheduled_time: "16:30",
               cost: actGoa[2]?.estimated_cost ?? 8,
-              notes: "Explore pastel Portuguese architecture in Fontainhas.",
+              notes: "Explore colorful Portuguese alleys and art cafes.",
               is_completed: true,
               created_at: now.toISOString(),
               updated_at: now.toISOString(),
@@ -286,13 +295,26 @@ function createInitialTrips(): TripWithDetails[] {
               stop_id: t2Stop1Id,
               activity_id: actGoa[1]?.id || null,
               day_number: 3,
-              scheduled_time: "08:30",
+              scheduled_time: "07:00",
               cost: actGoa[1]?.estimated_cost ?? 35,
-              notes: "4x4 jungle jeep safari through wildlife sanctuary.",
+              notes: "Full day 4x4 jungle jeep safari.",
               is_completed: false,
               created_at: now.toISOString(),
               updated_at: now.toISOString(),
               activity: actGoa[1] || null,
+            },
+            {
+              id: "sa-2-4",
+              stop_id: t2Stop1Id,
+              activity_id: actGoa[4]?.id || null,
+              day_number: 4,
+              scheduled_time: "12:00",
+              cost: actGoa[4]?.estimated_cost ?? 15,
+              notes: "Authentic Goan buffet on banana leaves.",
+              is_completed: false,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              activity: actGoa[4] || null,
             },
           ],
         },
@@ -303,10 +325,10 @@ function createInitialTrips(): TripWithDetails[] {
           trip_id: trip2Id,
           stop_id: t2Stop1Id,
           activity_id: null,
-          category: "Accommodation",
-          amount: 380,
+          category: "Transport",
+          amount: 45,
           currency: "USD",
-          description: "Boutique Beach Resort Booking",
+          description: "Scooter Rental (5 Days)",
           date: formatOffsetDate(-2),
           created_at: now.toISOString(),
           updated_at: now.toISOString(),
@@ -316,27 +338,27 @@ function createInitialTrips(): TripWithDetails[] {
           trip_id: trip2Id,
           stop_id: t2Stop1Id,
           activity_id: null,
-          category: "Transport",
-          amount: 30,
+          category: "Accommodation",
+          amount: 350,
           currency: "USD",
-          description: "Scooty Rental & Fuel",
-          date: formatOffsetDate(-1),
+          description: "Beachfront Villa at Candolim",
+          date: formatOffsetDate(-2),
           created_at: now.toISOString(),
           updated_at: now.toISOString(),
         },
       ],
     },
 
-    // Trip 3: COMPLETED (Ahmedabad -> Mumbai)
+    // Trip 3: COMPLETED / PAST (Ahmedabad -> Mumbai)
     {
       id: trip3Id,
       user_id: "u0000000-0000-0000-0000-000000000001",
-      title: "Mumbai & Ahmedabad Cultural Explorer",
+      title: "Cultural Crossroads: Mumbai & Ahmedabad Explorer",
       description:
-        "An immersive cultural tour exploring UNESCO heritage architecture in Ahmedabad and the colonial art deco boulevards of Mumbai.",
+        "Retrace western India's architectural heritage from stepwells to Art Deco promenades.",
       start_date: formatOffsetDate(-30),
       end_date: formatOffsetDate(-22),
-      target_budget: 1500,
+      target_budget: 2100,
       cover_image_url:
         "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=800&auto=format&fit=crop&q=80",
       is_public: false,
@@ -381,6 +403,19 @@ function createInitialTrips(): TripWithDetails[] {
               updated_at: now.toISOString(),
               activity: actAhm[1] || null,
             },
+            {
+              id: "sa-3-3",
+              stop_id: t3Stop1Id,
+              activity_id: actAhm[2]?.id || null,
+              day_number: 3,
+              scheduled_time: "21:00",
+              cost: actAhm[2]?.estimated_cost ?? 5,
+              notes: "Night market street food tour.",
+              is_completed: true,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              activity: actAhm[2] || null,
+            },
           ],
         },
         {
@@ -395,26 +430,39 @@ function createInitialTrips(): TripWithDetails[] {
           city: mumbai,
           stop_activities: [
             {
-              id: "sa-3-3",
+              id: "sa-3-4",
               stop_id: t3Stop2Id,
               activity_id: actMum[0]?.id || null,
               day_number: 5,
               scheduled_time: "09:00",
-              cost: actMum[0]?.estimated_cost ?? 15,
-              notes: "Ferry ride to Elephanta caves.",
+              cost: actMum[0]?.estimated_cost ?? 0,
+              notes: "Gateway of India & Taj Mahal Palace exterior walk.",
               is_completed: true,
               created_at: now.toISOString(),
               updated_at: now.toISOString(),
               activity: actMum[0] || null,
             },
             {
-              id: "sa-3-4",
+              id: "sa-3-5",
+              stop_id: t3Stop2Id,
+              activity_id: actMum[2]?.id || null,
+              day_number: 6,
+              scheduled_time: "08:30",
+              cost: actMum[2]?.estimated_cost ?? 4,
+              notes: "Brun Maska, Bun Maska Chai at Kyani & Co.",
+              is_completed: true,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              activity: actMum[2] || null,
+            },
+            {
+              id: "sa-3-6",
               stop_id: t3Stop2Id,
               activity_id: actMum[1]?.id || null,
-              day_number: 5,
+              day_number: 7,
               scheduled_time: "17:30",
               cost: actMum[1]?.estimated_cost ?? 0,
-              notes: "Sunset stroll along Queen's Necklace.",
+              notes: "Sunset promenade walk along Queen's Necklace.",
               is_completed: true,
               created_at: now.toISOString(),
               updated_at: now.toISOString(),
@@ -447,6 +495,232 @@ function createInitialTrips(): TripWithDetails[] {
           currency: "USD",
           description: "South Mumbai Art Deco Hotel",
           date: formatOffsetDate(-26),
+          created_at: now.toISOString(),
+          updated_at: now.toISOString(),
+        },
+      ],
+    },
+
+    // Trip 4: UPCOMING & PUBLIC (Manali & Solang Valley)
+    {
+      id: trip4Id,
+      user_id: "u0000000-0000-0000-0000-000000000001",
+      title: "Himalayan Alpine Wonderland: Manali & Solang Valley",
+      description:
+        "High-altitude adventure through snowy mountain passes, apple orchards, Solang Valley paragliding, and historic wooden temples.",
+      start_date: formatOffsetDate(28),
+      end_date: formatOffsetDate(34),
+      target_budget: 1400,
+      cover_image_url:
+        "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=800&auto=format&fit=crop&q=80",
+      is_public: true,
+      share_slug: "himalayan-alpine-manali",
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+      stops: [
+        {
+          id: t4Stop1Id,
+          trip_id: trip4Id,
+          city_id: manali.id,
+          stop_order: 0,
+          arrival_date: formatOffsetDate(28),
+          departure_date: formatOffsetDate(34),
+          created_at: now.toISOString(),
+          updated_at: now.toISOString(),
+          city: manali,
+          stop_activities: [
+            {
+              id: "sa-4-1",
+              stop_id: t4Stop1Id,
+              activity_id: actManali[0]?.id || null,
+              day_number: 1,
+              scheduled_time: "10:00",
+              cost: actManali[0]?.estimated_cost ?? 40,
+              notes: "Tandem paragliding flight over Solang Valley with GoPro footage.",
+              is_completed: false,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              activity: actManali[0] || null,
+            },
+            {
+              id: "sa-4-2",
+              stop_id: t4Stop1Id,
+              activity_id: actManali[1]?.id || null,
+              day_number: 2,
+              scheduled_time: "07:30",
+              cost: actManali[1]?.estimated_cost ?? 30,
+              notes: "Drive through Atal Tunnel to high altitude glaciers at Rohtang Pass.",
+              is_completed: false,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              activity: actManali[1] || null,
+            },
+            {
+              id: "sa-4-3",
+              stop_id: t4Stop1Id,
+              activity_id: actManali[2]?.id || null,
+              day_number: 3,
+              scheduled_time: "18:00",
+              cost: actManali[2]?.estimated_cost ?? 15,
+              notes: "Wood-fired trout dinner with acoustic mountain music in Old Manali.",
+              is_completed: false,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              activity: actManali[2] || null,
+            },
+            {
+              id: "sa-4-4",
+              stop_id: t4Stop1Id,
+              activity_id: actManali[3]?.id || null,
+              day_number: 4,
+              scheduled_time: "11:00",
+              cost: actManali[3]?.estimated_cost ?? 1,
+              notes: "Historic 1553 pagoda wood temple in deodar cedar forest.",
+              is_completed: false,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              activity: actManali[3] || null,
+            },
+          ],
+        },
+      ],
+      expenses: [
+        {
+          id: "exp-4-1",
+          trip_id: trip4Id,
+          stop_id: t4Stop1Id,
+          activity_id: null,
+          category: "Accommodation",
+          amount: 380,
+          currency: "USD",
+          description: "Riverside Apple Orchard Pine Cottage",
+          date: formatOffsetDate(28),
+          created_at: now.toISOString(),
+          updated_at: now.toISOString(),
+        },
+        {
+          id: "exp-4-2",
+          trip_id: trip4Id,
+          stop_id: t4Stop1Id,
+          activity_id: null,
+          category: "Transport",
+          amount: 60,
+          currency: "USD",
+          description: "Private SUV Airport Transfer (Bhuntar to Manali)",
+          date: formatOffsetDate(28),
+          created_at: now.toISOString(),
+          updated_at: now.toISOString(),
+        },
+      ],
+    },
+
+    // Trip 5: UPCOMING & PUBLIC (Bangalore Explorer)
+    {
+      id: trip5Id,
+      user_id: "u0000000-0000-0000-0000-000000000001",
+      title: "Silicon Garden & Heritage Trails: Bangalore Explorer",
+      description:
+        "Experience Bangalore's legendary lush botanical gardens, vintage breakfast tiffin rooms in Malleshwaram, and vibrant microbrewery hubs.",
+      start_date: formatOffsetDate(42),
+      end_date: formatOffsetDate(47),
+      target_budget: 1100,
+      cover_image_url:
+        "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=800&auto=format&fit=crop&q=80",
+      is_public: true,
+      share_slug: "bangalore-heritage-garden-trails",
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+      stops: [
+        {
+          id: t5Stop1Id,
+          trip_id: trip5Id,
+          city_id: bangalore.id,
+          stop_order: 0,
+          arrival_date: formatOffsetDate(42),
+          departure_date: formatOffsetDate(47),
+          created_at: now.toISOString(),
+          updated_at: now.toISOString(),
+          city: bangalore,
+          stop_activities: [
+            {
+              id: "sa-5-1",
+              stop_id: t5Stop1Id,
+              activity_id: actBlr[0]?.id || null,
+              day_number: 1,
+              scheduled_time: "07:30",
+              cost: actBlr[0]?.estimated_cost ?? 2,
+              notes: "Morning walking tour of the 240-acre garden and Glass House.",
+              is_completed: false,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              activity: actBlr[0] || null,
+            },
+            {
+              id: "sa-5-2",
+              stop_id: t5Stop1Id,
+              activity_id: actBlr[4]?.id || null,
+              day_number: 2,
+              scheduled_time: "08:30",
+              cost: actBlr[4]?.estimated_cost ?? 6,
+              notes: "Crispy butter dosas & filter coffee at legendary Malleshwaram eateries.",
+              is_completed: false,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              activity: actBlr[4] || null,
+            },
+            {
+              id: "sa-5-3",
+              stop_id: t5Stop1Id,
+              activity_id: actBlr[2]?.id || null,
+              day_number: 3,
+              scheduled_time: "11:00",
+              cost: actBlr[2]?.estimated_cost ?? 6,
+              notes: "Tudor-style wooden carvings & royal vintage carriages.",
+              is_completed: false,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              activity: actBlr[2] || null,
+            },
+            {
+              id: "sa-5-4",
+              stop_id: t5Stop1Id,
+              activity_id: actBlr[1]?.id || null,
+              day_number: 4,
+              scheduled_time: "19:00",
+              cost: actBlr[1]?.estimated_cost ?? 25,
+              notes: "Craft beer tasting & wood-fired pizza trail in Indiranagar.",
+              is_completed: false,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+              activity: actBlr[1] || null,
+            },
+          ],
+        },
+      ],
+      expenses: [
+        {
+          id: "exp-5-1",
+          trip_id: trip5Id,
+          stop_id: t5Stop1Id,
+          activity_id: null,
+          category: "Accommodation",
+          amount: 290,
+          currency: "USD",
+          description: "Indiranagar Boutique Heritage Hotel",
+          date: formatOffsetDate(42),
+          created_at: now.toISOString(),
+          updated_at: now.toISOString(),
+        },
+        {
+          id: "exp-5-2",
+          trip_id: trip5Id,
+          stop_id: t5Stop1Id,
+          activity_id: null,
+          category: "Food & Dining",
+          amount: 50,
+          currency: "USD",
+          description: "Chef's Tasting Dinner at Indiranagar",
+          date: formatOffsetDate(43),
           created_at: now.toISOString(),
           updated_at: now.toISOString(),
         },
@@ -496,8 +770,8 @@ const LEGACY_ID_MAP: Record<string, string> = {
   "trip-1": "t0000000-0000-0000-0000-000000000001",
   "trip-2": "t0000000-0000-0000-0000-000000000002",
   "trip-3": "t0000000-0000-0000-0000-000000000003",
-  "trip-4": "t0000000-0000-0000-0000-000000000002",
-  "trip-5": "t0000000-0000-0000-0000-000000000001",
+  "trip-4": "t0000000-0000-0000-0000-000000000004",
+  "trip-5": "t0000000-0000-0000-0000-000000000005",
 };
 
 /**
@@ -535,25 +809,30 @@ export function saveStoredTrip(tripInsert: TripInsert): TripWithDetails {
     target_budget: Number(tripInsert.target_budget || 0),
     cover_image_url: tripInsert.cover_image_url || null,
     is_public: !!tripInsert.is_public,
-    share_slug: tripInsert.share_slug || `trip-${tripId.substring(0, 8)}`,
-    created_at: existingIdx >= 0 ? trips[existingIdx].created_at : new Date().toISOString(),
+    share_slug: tripInsert.share_slug || tripInsert.title.toLowerCase().replace(/\s+/g, "-"),
+    created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    stops: existingIdx >= 0 ? trips[existingIdx].stops : [],
-    expenses: existingIdx >= 0 ? trips[existingIdx].expenses : [],
+    stops: [],
+    expenses: [],
   };
 
   if (existingIdx >= 0) {
-    trips[existingIdx] = { ...trips[existingIdx], ...newTrip };
+    trips[existingIdx] = {
+      ...trips[existingIdx],
+      ...newTrip,
+      stops: trips[existingIdx].stops,
+      expenses: trips[existingIdx].expenses,
+    };
   } else {
     trips.unshift(newTrip);
   }
 
   saveAllStoredTrips(trips);
-  return newTrip;
+  return existingIdx >= 0 ? trips[existingIdx] : newTrip;
 }
 
 /**
- * Delete a trip.
+ * Delete a trip by ID.
  */
 export function deleteStoredTrip(tripId: string): void {
   const trips = getStoredTrips().filter((t) => t.id !== tripId);
@@ -561,80 +840,85 @@ export function deleteStoredTrip(tripId: string): void {
 }
 
 /**
- * Add a stop to a stored trip.
+ * Add a stop to a trip.
  */
-export function addStoredStop(stopData: StopInsert, city?: City): StopWithDetails {
+export function addStoredStop(stopInsert: StopInsert): StopWithDetails {
   const trips = getStoredTrips();
-  const trip = trips.find((t) => t.id === stopData.trip_id);
-  if (!trip) {
-    throw new Error(`Trip ${stopData.trip_id} not found in store`);
-  }
+  const trip = trips.find((t) => t.id === stopInsert.trip_id);
+  if (!trip) throw new Error("Trip not found");
 
-  const resolvedCity =
-    city ||
-    FALLBACK_CITIES.find((c) => c.id === stopData.city_id) ||
-    FALLBACK_CITIES[0];
-
-  const stopId = stopData.id || generateUUID();
-  const stopOrder =
-    stopData.stop_order !== undefined ? stopData.stop_order : trip.stops.length;
-
-  const newStop: StopWithDetails = {
-    id: stopId,
-    trip_id: stopData.trip_id,
-    city_id: stopData.city_id,
-    stop_order: stopOrder,
-    arrival_date: stopData.arrival_date || null,
-    departure_date: stopData.departure_date || null,
+  const city = FALLBACK_CITIES.find((c) => c.id === stopInsert.city_id) || {
+    id: stopInsert.city_id,
+    name: "Unknown City",
+    country: "India",
+    region: null,
+    cost_index: 3,
+    popularity_score: 80,
+    latitude: 0,
+    longitude: 0,
+    image_url: null,
+    description: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    city: resolvedCity,
+  };
+
+  const newStop: StopWithDetails = {
+    id: stopInsert.id || generateUUID(),
+    trip_id: stopInsert.trip_id,
+    city_id: stopInsert.city_id,
+    stop_order: stopInsert.stop_order ?? (trip.stops ? trip.stops.length : 0),
+    arrival_date: stopInsert.arrival_date || null,
+    departure_date: stopInsert.departure_date || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    city,
     stop_activities: [],
   };
 
+  if (!trip.stops) trip.stops = [];
   trip.stops.push(newStop);
   trip.stops.sort((a, b) => a.stop_order - b.stop_order);
-  trip.updated_at = new Date().toISOString();
 
   saveAllStoredTrips(trips);
   return newStop;
 }
 
 /**
- * Update dates / order of a stored stop.
+ * Update a stop.
  */
-export function updateStoredStop(stopId: string, updates: StopUpdate): StopWithDetails | null {
+export function updateStoredStop(stopId: string, updates: StopUpdate): StopWithDetails {
   const trips = getStoredTrips();
   for (const trip of trips) {
-    const stop = trip.stops.find((s) => s.id === stopId);
+    const stop = (trip.stops || []).find((s) => s.id === stopId);
     if (stop) {
       if (updates.arrival_date !== undefined) stop.arrival_date = updates.arrival_date;
       if (updates.departure_date !== undefined) stop.departure_date = updates.departure_date;
       if (updates.stop_order !== undefined) stop.stop_order = updates.stop_order;
       stop.updated_at = new Date().toISOString();
-      trip.updated_at = new Date().toISOString();
+      trip.stops?.sort((a, b) => a.stop_order - b.stop_order);
       saveAllStoredTrips(trips);
       return stop;
     }
   }
-  return null;
+  throw new Error("Stop not found");
 }
 
 /**
- * Delete a stop.
+ * Delete a stop from a trip.
  */
 export function deleteStoredStop(stopId: string): void {
   const trips = getStoredTrips();
   for (const trip of trips) {
-    const idx = trip.stops.findIndex((s) => s.id === stopId);
-    if (idx >= 0) {
-      trip.stops.splice(idx, 1);
-      trip.stops.forEach((s, orderIdx) => {
-        s.stop_order = orderIdx;
-      });
-      trip.updated_at = new Date().toISOString();
-      saveAllStoredTrips(trips);
-      return;
+    if (trip.stops) {
+      const idx = trip.stops.findIndex((s) => s.id === stopId);
+      if (idx >= 0) {
+        trip.stops.splice(idx, 1);
+        trip.stops.forEach((s, i) => {
+          s.stop_order = i;
+        });
+        saveAllStoredTrips(trips);
+        return;
+      }
     }
   }
 }
@@ -648,143 +932,129 @@ export function reorderStoredStops(
 ): void {
   const trips = getStoredTrips();
   const trip = trips.find((t) => t.id === tripId);
-  if (!trip) return;
+  if (!trip || !trip.stops) return;
 
-  const map = new Map(orderedStops.map((o) => [o.id, o.stop_order]));
-  trip.stops.forEach((s) => {
-    if (map.has(s.id)) {
-      s.stop_order = map.get(s.id)!;
+  const orderMap = new Map(orderedStops.map((item) => [item.id, item.stop_order]));
+  trip.stops.forEach((stop) => {
+    if (orderMap.has(stop.id)) {
+      stop.stop_order = orderMap.get(stop.id)!;
     }
   });
+
   trip.stops.sort((a, b) => a.stop_order - b.stop_order);
-  trip.updated_at = new Date().toISOString();
   saveAllStoredTrips(trips);
 }
 
 /**
- * Add an activity to a stored stop.
+ * Add an activity to a stop.
  */
-export function addStoredStopActivity(activityData: StopActivityInsert): StopActivityWithDetails {
+export function addStoredStopActivity(activityInsert: StopActivityInsert): StopActivityWithDetails {
   const trips = getStoredTrips();
   for (const trip of trips) {
-    const stop = trip.stops.find((s) => s.id === activityData.stop_id);
+    const stop = (trip.stops || []).find((s) => s.id === activityInsert.stop_id);
     if (stop) {
-      const actId = activityData.id || generateUUID();
-      const catalogActivity = FALLBACK_ACTIVITIES.find(
-        (a) => a.id === activityData.activity_id
-      );
+      let catalogActivity = null;
+      if (activityInsert.activity_id) {
+        catalogActivity =
+          FALLBACK_ACTIVITIES.find((a) => a.id === activityInsert.activity_id) || null;
+      }
 
-      const newAct: StopActivityWithDetails = {
-        id: actId,
-        stop_id: activityData.stop_id,
-        activity_id: activityData.activity_id || null,
-        day_number: activityData.day_number || 1,
-        scheduled_time: activityData.scheduled_time || null,
-        cost: Number(activityData.cost ?? catalogActivity?.estimated_cost ?? 0),
-        notes: activityData.notes || null,
-        is_completed: !!activityData.is_completed,
+      const newActivity: StopActivityWithDetails = {
+        id: activityInsert.id || generateUUID(),
+        stop_id: activityInsert.stop_id,
+        activity_id: activityInsert.activity_id || null,
+        day_number: activityInsert.day_number || 1,
+        scheduled_time: activityInsert.scheduled_time || null,
+        cost: Number(activityInsert.cost || 0),
+        notes: activityInsert.notes || null,
+        is_completed: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        activity: catalogActivity || null,
+        activity: catalogActivity,
       };
 
       if (!stop.stop_activities) stop.stop_activities = [];
-      stop.stop_activities.push(newAct);
+      stop.stop_activities.push(newActivity);
       stop.stop_activities.sort((a, b) => a.day_number - b.day_number);
-      trip.updated_at = new Date().toISOString();
+
       saveAllStoredTrips(trips);
-      return newAct;
+      return newActivity;
     }
   }
-  throw new Error(`Stop ${activityData.stop_id} not found in store`);
+  throw new Error("Stop not found");
 }
 
 /**
- * Update a scheduled activity.
+ * Update an activity in a stop.
  */
 export function updateStoredStopActivity(
-  actId: string,
+  activityId: string,
   updates: StopActivityUpdate
-): StopActivityWithDetails | null {
+): StopActivityWithDetails {
   const trips = getStoredTrips();
   for (const trip of trips) {
-    for (const stop of trip.stops) {
-      const act = (stop.stop_activities || []).find((a) => a.id === actId);
+    for (const stop of trip.stops || []) {
+      const act = (stop.stop_activities || []).find((a) => a.id === activityId);
       if (act) {
-        if (updates.scheduled_time !== undefined) act.scheduled_time = updates.scheduled_time;
         if (updates.day_number !== undefined) act.day_number = updates.day_number;
+        if (updates.scheduled_time !== undefined) act.scheduled_time = updates.scheduled_time;
         if (updates.cost !== undefined) act.cost = Number(updates.cost);
         if (updates.notes !== undefined) act.notes = updates.notes;
         if (updates.is_completed !== undefined) act.is_completed = updates.is_completed;
         act.updated_at = new Date().toISOString();
-        trip.updated_at = new Date().toISOString();
+
+        stop.stop_activities?.sort((a, b) => a.day_number - b.day_number);
         saveAllStoredTrips(trips);
         return act;
       }
     }
   }
-  return null;
+  throw new Error("Activity not found");
 }
 
 /**
- * Delete a scheduled activity.
+ * Delete an activity from a stop.
  */
-export function deleteStoredStopActivity(actId: string): void {
+export function deleteStoredStopActivity(activityId: string): void {
   const trips = getStoredTrips();
   for (const trip of trips) {
-    for (const stop of trip.stops) {
-      const idx = (stop.stop_activities || []).findIndex((a) => a.id === actId);
-      if (idx >= 0) {
-        stop.stop_activities!.splice(idx, 1);
-        trip.updated_at = new Date().toISOString();
-        saveAllStoredTrips(trips);
-        return;
+    for (const stop of trip.stops || []) {
+      if (stop.stop_activities) {
+        const idx = stop.stop_activities.findIndex((a) => a.id === activityId);
+        if (idx >= 0) {
+          stop.stop_activities.splice(idx, 1);
+          saveAllStoredTrips(trips);
+          return;
+        }
       }
     }
   }
 }
 
 /**
- * Add an expense.
+ * Add an expense to a trip.
  */
-export function addStoredExpense(expData: ExpenseInsert): Expense {
+export function addStoredExpense(expenseInsert: ExpenseInsert): Expense {
   const trips = getStoredTrips();
-  const trip = trips.find((t) => t.id === expData.trip_id);
-  if (!trip) throw new Error(`Trip ${expData.trip_id} not found in store`);
+  const trip = trips.find((t) => t.id === expenseInsert.trip_id);
+  if (!trip) throw new Error("Trip not found");
 
-  const exp: Expense = {
-    id: expData.id || generateUUID(),
-    trip_id: expData.trip_id,
-    stop_id: expData.stop_id || null,
-    activity_id: expData.activity_id || null,
-    category: expData.category,
-    amount: Number(expData.amount || 0),
-    currency: expData.currency || "USD",
-    description: expData.description || null,
-    date: expData.date || null,
+  const newExpense: Expense = {
+    id: expenseInsert.id || generateUUID(),
+    trip_id: expenseInsert.trip_id,
+    stop_id: expenseInsert.stop_id || null,
+    activity_id: expenseInsert.activity_id || null,
+    category: expenseInsert.category,
+    amount: Number(expenseInsert.amount),
+    currency: expenseInsert.currency || "USD",
+    description: expenseInsert.description || null,
+    date: expenseInsert.date || new Date().toISOString().split("T")[0],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
 
   if (!trip.expenses) trip.expenses = [];
-  trip.expenses.push(exp);
-  trip.updated_at = new Date().toISOString();
+  trip.expenses.push(newExpense);
   saveAllStoredTrips(trips);
-  return exp;
-}
-
-/**
- * Delete an expense.
- */
-export function deleteStoredExpense(expId: string): void {
-  const trips = getStoredTrips();
-  for (const trip of trips) {
-    const idx = (trip.expenses || []).findIndex((e) => e.id === expId);
-    if (idx >= 0) {
-      trip.expenses!.splice(idx, 1);
-      trip.updated_at = new Date().toISOString();
-      saveAllStoredTrips(trips);
-      return;
-    }
-  }
+  return newExpense;
 }
