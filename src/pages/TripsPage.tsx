@@ -9,6 +9,8 @@ import { DeleteTripDialog } from "@/components/trips/DeleteTripDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTrips, useDeleteTrip } from "@/hooks/useTrips";
+import { useAuth } from "@/hooks/useAuth";
+import { cloneTrip } from "@/features/sharing";
 import { toast } from "sonner";
 import type { TripCardData } from "@/types";
 
@@ -58,8 +60,21 @@ export function TripsPage() {
     navigate(`/trips/${trip.id}`);
   };
 
-  const handleDuplicate = (trip: TripCardData) => {
-    toast.info(`Duplicate feature placeholder: Duplicating "${trip.name}"`);
+  const { user } = useAuth();
+
+  const handleDuplicate = async (trip: TripCardData) => {
+    if (!user) {
+      toast.info("Please log in to duplicate trips.");
+      return;
+    }
+    try {
+      const newTripId = await cloneTrip(trip.id, user.id);
+      toast.success(`Trip "${trip.name}" duplicated successfully!`);
+      refetch();
+      navigate(`/trips/${newTripId}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to duplicate trip");
+    }
   };
 
   const handleDeleteConfirm = (trip: TripCardData) => {
