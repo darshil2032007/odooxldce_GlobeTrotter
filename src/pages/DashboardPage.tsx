@@ -5,7 +5,7 @@ import { QuickActions } from "@/components/dashboard/QuickActions";
 import { BudgetSummaryCards } from "@/components/dashboard/BudgetSummaryCards";
 import { UpcomingTrips } from "@/components/dashboard/UpcomingTrips";
 import { RecentTrips } from "@/components/dashboard/RecentTrips";
-import { RecommendedDestinations } from "@/components/dashboard/RecommendedDestinations";
+import { DestinationRecommender } from "@/features/recommendations";
 import { DeleteTripDialog } from "@/components/trips/DeleteTripDialog";
 import {
   useUpcomingTrips,
@@ -58,11 +58,8 @@ export function DashboardPage() {
         onDelete={setSelectedTripToDelete}
       />
 
-      {/* Recommended Destinations Placeholder (Dev 4 interface) */}
-      <RecommendedDestinations
-        destinations={MOCK_RECOMMENDED_DESTINATIONS}
-        onSelectDestination={(dest) => toast.info(`Starting plan for ${dest.name}`)}
-      />
+      {/* AI Destination Recommendations with Deterministic Scoring */}
+      <DestinationRecommender />
 
       {/* Recent Trips */}
       <RecentTrips
