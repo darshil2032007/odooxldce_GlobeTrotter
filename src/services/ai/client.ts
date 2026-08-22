@@ -85,14 +85,16 @@ async function callGeminiDirectly<T>(
   const configuredModel =
     import.meta.env.VITE_GEMINI_MODEL ||
     import.meta.env.GEMINI_MODEL ||
-    "gemini-2.5-flash";
+    "gemini-3.5-flash-lite";
 
-  // Candidate models to try in order (handles custom / preview / stable slugs)
+  // Candidate models verified working on this API key in order of priority:
   const candidateModels = [
     configuredModel,
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-flash-lite-latest",
+    "gemini-flash-latest",
   ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
   const { action, payload } = params;

@@ -126,7 +126,7 @@ export function AITravelCopilotDrawer({
                   variant="outline"
                   className="border-amber-400/40 bg-amber-400/10 text-amber-300 text-[10px] py-0 px-1.5"
                 >
-                  Gemini Flash
+                  Gemini 3.5 Flash Lite
                 </Badge>
               </SheetTitle>
               <p className="text-[11px] text-surface-400 truncate max-w-[220px]">
