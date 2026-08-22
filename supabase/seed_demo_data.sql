@@ -110,7 +110,7 @@ BEGIN
     (CURRENT_DATE + INTERVAL '14 days')::DATE,
     (CURRENT_DATE + INTERVAL '21 days')::DATE,
     2400.00,
-    'https://images.unsplash.com/photo-1603288940300-349f2b86ec32?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1599661046289-e31897846e41?w=800&auto=format&fit=crop&q=80',
     true,
     'rajasthan-royal-heritage',
     timezone('utc'::text, now()),

@@ -73,7 +73,7 @@ function createInitialTrips(): TripWithDetails[] {
       end_date: formatOffsetDate(21),
       target_budget: 2400,
       cover_image_url:
-        "https://images.unsplash.com/photo-1603288940300-349f2b86ec32?w=800&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1599661046289-e31897846e41?w=800&auto=format&fit=crop&q=80",
       is_public: true,
       share_slug: "rajasthan-royal-heritage",
       created_at: now.toISOString(),
