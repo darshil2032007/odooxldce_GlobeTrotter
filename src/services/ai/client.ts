@@ -13,20 +13,20 @@ export interface InvokeAIParams {
 export interface AIResponseWrapper<T> {
   success: boolean;
   data: T;
-  source: "edge-function" | "resilient-fallback";
+  source: "edge-function" | "gemini-direct" | "resilient-fallback";
   error?: string;
 }
 
 /**
- * Client-side invoker for Supabase Gemini AI Edge Function.
- *
- * Security architecture:
- * The frontend never exposes GEMINI_API_KEY. All AI calls flow through
- * the Supabase Edge Function boundary (`gemini-travel-assistant`).
+ * Unified invoker for Gemini AI.
+ * 1. Tries Supabase Edge Function first (`gemini-travel-assistant`).
+ * 2. If Edge Function is unavailable in local dev, directly invokes Google Gemini API via VITE_GEMINI_API_KEY.
+ * 3. If offline, falls back to deterministic local synthesis.
  */
 export async function invokeGeminiAssistant<T>(
   params: InvokeAIParams
 ): Promise<AIResponseWrapper<T>> {
+  // 1. Try Supabase Edge Function
   try {
     const { data, error } = await supabase.functions.invoke(
       "gemini-travel-assistant",
@@ -35,35 +35,201 @@ export async function invokeGeminiAssistant<T>(
       }
     );
 
-    if (error) {
-      console.warn("Supabase AI function error, activating fallback handler:", error);
-      throw error;
-    }
-
-    if (data && data.success) {
+    if (!error && data && data.success) {
       return {
         success: true,
         data: data.data as T,
         source: "edge-function",
       };
     }
-
-    throw new Error(data?.error || "Invalid response structure from AI function");
-  } catch (err) {
-    // When Edge Functions are not deployed locally in development, generate intelligent structured fallback
-    console.warn("Falling back to local AI reasoning synthesis for action:", params.action);
-    const fallbackData = generateLocalAIFallback<T>(params);
-    return {
-      success: true,
-      data: fallbackData,
-      source: "resilient-fallback",
-      error: err instanceof Error ? err.message : undefined,
-    };
+  } catch (edgeErr) {
+    console.debug("Edge function unavailable, evaluating direct API key...", edgeErr);
   }
+
+  // 2. Direct Gemini API call if key is available in environment
+  const directApiKey = (
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    ""
+  ).trim();
+
+  if (directApiKey && directApiKey !== "undefined") {
+    try {
+      const directResult = await callGeminiDirectly<T>(params, directApiKey);
+      return {
+        success: true,
+        data: directResult,
+        source: "gemini-direct",
+      };
+    } catch (apiErr) {
+      console.warn("Direct Gemini API call error:", apiErr);
+    }
+  }
+
+  // 3. Fallback to resilient local synthesis
+  const fallbackData = generateLocalAIFallback<T>(params);
+  return {
+    success: true,
+    data: fallbackData,
+    source: "resilient-fallback",
+  };
 }
 
 /**
- * Intelligent deterministic fallback generator for when Edge Function is unreachable or in offline dev mode.
+ * Direct Google Gemini API caller for local development
+ */
+async function callGeminiDirectly<T>(
+  params: InvokeAIParams,
+  apiKey: string
+): Promise<T> {
+  const modelName =
+    import.meta.env.VITE_GEMINI_MODEL || "gemini-2.5-flash";
+  const { action, payload } = params;
+
+  let systemInstruction = "";
+  let userPrompt = "";
+  let isJsonExpected = true;
+
+  switch (action) {
+    case "generate-trip": {
+      systemInstruction = `You are GlobeTrotter AI's Expert Travel Planner.
+Your job is to generate a comprehensive, realistic multi-city travel itinerary.
+CRITICAL RULES:
+1. Return ONLY valid JSON conforming to the exact schema.
+2. DO NOT invent database UUIDs.
+3. Respect user budget and duration strictly.`;
+
+      userPrompt = `User Request: "${payload.prompt}"
+User Constraints:
+- Target Budget: ₹${payload.targetBudget || "Flexible"}
+- Duration: ${payload.durationDays || "Flexible"} Days
+- Travel Style: ${payload.travelStyle || "Moderate"}
+- Interests: ${(payload.interests as string[] || []).join(", ") || "General Sightseeing"}
+${payload.catalogSummary ? `Available Catalog Destinations:\n${payload.catalogSummary}` : ""}
+
+Return a JSON object in this exact format:
+{
+  "title": "Trip Title",
+  "summary": "2-3 sentence overview",
+  "recommendedTravelStyle": "budget | moderate | luxury | backpacker",
+  "estimatedTotalCost": 35000,
+  "currency": "INR",
+  "stops": [
+    {
+      "cityName": "City Name",
+      "country": "India",
+      "stayDays": 3,
+      "reasoning": "Why this city is chosen",
+      "days": [
+        {
+          "dayNumber": 1,
+          "theme": "Day Theme",
+          "activities": [
+            {
+              "title": "Activity Title",
+              "category": "Culture | Adventure | Food | Sightseeing | Relaxation",
+              "scheduledTime": "09:30",
+              "durationHours": 3.0,
+              "estimatedCost": 500,
+              "description": "Brief description"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}`;
+      break;
+    }
+
+    case "trip-copilot": {
+      isJsonExpected = false;
+      systemInstruction = `You are GlobeTrotter AI's Personal Travel Copilot. Answer concisely based on the supplied trip context.`;
+      userPrompt = `Trip Context: ${JSON.stringify(payload.tripContext, null, 2)}\nUser Question: "${payload.message}"\nHistory: ${JSON.stringify(payload.conversationHistory || [])}`;
+      break;
+    }
+
+    case "optimize-trip": {
+      systemInstruction = `You are GlobeTrotter AI's Itinerary Optimization Engine. Suggest high-impact improvements.`;
+      userPrompt = `Goal: "${payload.goal || "Optimize for cost and better pacing"}"\nTrip Context: ${JSON.stringify(payload.tripContext, null, 2)}
+Return JSON:
+{
+  "summary": "Explanation",
+  "expectedTotalSavings": 2500,
+  "paceImprovement": "Balanced afternoon pacing",
+  "suggestions": [
+    {
+      "id": "opt-1",
+      "type": "replace_activity | remove_activity",
+      "title": "Suggestion title",
+      "currentActivityTitle": "Activity to replace",
+      "replacementActivityTitle": "Replacement activity",
+      "cityName": "City Name",
+      "dayNumber": 2,
+      "reason": "Why this helps",
+      "estimatedCostDifference": -2450
+    }
+  ]
+}`;
+      break;
+    }
+
+    case "budget-explanation": {
+      isJsonExpected = false;
+      systemInstruction = `You are GlobeTrotter AI's Financial Intelligence Advisor. Explain the deterministic budget numbers in 2-3 friendly paragraphs.`;
+      const catObj = payload.mostExpensiveCategory as { category?: string; amount?: number } | null | undefined;
+      userPrompt = `Data: Target ₹${payload.targetBudget}, Spent ₹${payload.currentCost}, Deficit ₹${payload.deficit}, Top Category: ${catObj?.category || "Activities"} (₹${catObj?.amount || 0}), Potential Savings: ₹${payload.totalPotentialSavings || 0}`;
+      break;
+    }
+
+    case "recommendation-explanation": {
+      isJsonExpected = false;
+      systemInstruction = `Write 1-2 sentence compelling reason why this destination scored highly.`;
+      userPrompt = `City: ${payload.cityName}, Match Score: ${payload.score}%, Budget: ₹${payload.targetBudget}, Style: ${payload.travelStyle}, Interests: ${(payload.interests as string[] || []).join(", ")}`;
+      break;
+    }
+  }
+
+  // Choose appropriate endpoint model (fallback if non-standard model name)
+  const targetModel = modelName.startsWith("gemini") ? modelName : "gemini-2.5-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`;
+
+  const requestBody = {
+    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+    systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
+    generationConfig: {
+      temperature: isJsonExpected ? 0.2 : 0.7,
+      responseMimeType: isJsonExpected ? "application/json" : "text/plain",
+    },
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini API call failed (${res.status}): ${errText}`);
+  }
+
+  const json = await res.json();
+  const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+  if (isJsonExpected) {
+    const cleaned = rawText
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+    return JSON.parse(cleaned) as T;
+  }
+
+  return rawText as unknown as T;
+}
+
+/**
+ * Deterministic local fallback synthesis for offline resilience.
  */
 function generateLocalAIFallback<T>(params: InvokeAIParams): T {
   const { action, payload } = params;
@@ -74,7 +240,6 @@ function generateLocalAIFallback<T>(params: InvokeAIParams): T {
       const duration = Number(payload.durationDays || 5);
       const budget = Number(payload.targetBudget || 35000);
 
-      // Derive smart destination from prompt
       let city = "Goa";
       if (/jaipur|rajasthan|palace|desert/i.test(prompt)) city = "Jaipur";
       else if (/mumbai|bombay|marine|bollywood/i.test(prompt)) city = "Mumbai";
