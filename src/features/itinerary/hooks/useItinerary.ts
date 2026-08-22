@@ -351,7 +351,8 @@ export function useCreateStopActivity(tripId: string) {
   return useMutation({
     mutationFn: async (data: StopActivityInsert) => {
       try {
-        return await createStopActivity(data);
+        const created = await createStopActivity(data);
+        return created;
       } catch (err) {
         console.warn("Local stop activity creation fallback:", err);
         const act = FALLBACK_ACTIVITIES.find((a) => a.id === data.activity_id);
@@ -370,8 +371,34 @@ export function useCreateStopActivity(tripId: string) {
         };
       }
     },
-    onSuccess: () => {
+    onSuccess: (newActivity) => {
+      queryClient.setQueryData<TripWithDetails>(
+        ["trip-details", tripId],
+        (old) => {
+          if (!old) return old;
+          const act = FALLBACK_ACTIVITIES.find((a) => a.id === newActivity.activity_id);
+          const fullAct = {
+            ...newActivity,
+            activity: act || null,
+          };
+          const updatedStops = old.stops.map((s) => {
+            if (s.id === newActivity.stop_id) {
+              const currentActs = s.stop_activities || [];
+              const exists = currentActs.some((a) => a.id === newActivity.id);
+              return {
+                ...s,
+                stop_activities: exists
+                  ? currentActs.map((a) => (a.id === newActivity.id ? fullAct : a))
+                  : [...currentActs, fullAct],
+              };
+            }
+            return s;
+          });
+          return { ...old, stops: updatedStops };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: ["trip-details", tripId] });
+      queryClient.invalidateQueries({ queryKey: ["trips"] });
     },
   });
 }
@@ -397,7 +424,20 @@ export function useUpdateStopActivity(tripId: string) {
         return { id, ...updates };
       }
     },
-    onSuccess: () => {
+    onSuccess: (updated) => {
+      queryClient.setQueryData<TripWithDetails>(
+        ["trip-details", tripId],
+        (old) => {
+          if (!old) return old;
+          const updatedStops = old.stops.map((s) => ({
+            ...s,
+            stop_activities: (s.stop_activities || []).map((a) =>
+              a.id === updated.id ? { ...a, ...updated } : a
+            ),
+          }));
+          return { ...old, stops: updatedStops };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: ["trip-details", tripId] });
     },
   });
@@ -418,8 +458,20 @@ export function useDeleteStopActivity(tripId: string) {
       }
       return id;
     },
-    onSuccess: () => {
+    onSuccess: (deletedId) => {
+      queryClient.setQueryData<TripWithDetails>(
+        ["trip-details", tripId],
+        (old) => {
+          if (!old) return old;
+          const updatedStops = old.stops.map((s) => ({
+            ...s,
+            stop_activities: (s.stop_activities || []).filter((a) => a.id !== deletedId),
+          }));
+          return { ...old, stops: updatedStops };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: ["trip-details", tripId] });
+      queryClient.invalidateQueries({ queryKey: ["trips"] });
     },
   });
 }
@@ -445,7 +497,20 @@ export function useToggleActivityCompleted(tripId: string) {
         return { id, is_completed: isCompleted };
       }
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      queryClient.setQueryData<TripWithDetails>(
+        ["trip-details", tripId],
+        (old) => {
+          if (!old) return old;
+          const updatedStops = old.stops.map((s) => ({
+            ...s,
+            stop_activities: (s.stop_activities || []).map((a) =>
+              a.id === res.id ? { ...a, is_completed: res.is_completed } : a
+            ),
+          }));
+          return { ...old, stops: updatedStops };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: ["trip-details", tripId] });
     },
   });

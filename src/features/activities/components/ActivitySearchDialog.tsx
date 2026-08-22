@@ -50,12 +50,10 @@ export const ActivitySearchDialog: React.FC<ActivitySearchDialogProps> = ({
   );
 
   React.useEffect(() => {
-    if (defaultStopId) {
-      setTargetStopId(defaultStopId);
-    } else if (stops.length > 0 && !targetStopId) {
-      setTargetStopId(stops[0].id);
+    if (open) {
+      setTargetStopId(defaultStopId || stops[0]?.id || "");
     }
-  }, [defaultStopId, stops, targetStopId]);
+  }, [open, defaultStopId, stops]);
 
   const activeStop = useMemo(
     () => stops.find((s) => s.id === targetStopId) || stops[0],

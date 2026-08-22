@@ -10,7 +10,10 @@ function filterFallbackActivities(cityId?: string, filters?: ActivityFilters): A
   let result = [...FALLBACK_ACTIVITIES];
 
   if (cityId) {
-    result = result.filter((a) => a.city_id === cityId);
+    const cityMatches = result.filter((a) => a.city_id === cityId);
+    if (cityMatches.length > 0) {
+      result = cityMatches;
+    }
   }
 
   if (filters?.category) {

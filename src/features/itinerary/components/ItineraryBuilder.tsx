@@ -23,6 +23,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageLoader } from "@/components/ui/LoadingSpinner";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Calendar, MapPin, Clock } from "lucide-react";
+import { toast } from "sonner";
 import type { City, TripWithDetails } from "@/types/database";
 
 interface ItineraryBuilderProps {
@@ -148,8 +149,14 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
   };
 
   const handleOpenActivitySearchForDay = (dayNumber: number, stopId?: string) => {
+    if (!trip.stops || trip.stops.length === 0) {
+      toast.info("Please add a destination city stop first to schedule experiences.");
+      setIsCitySearchOpen(true);
+      return;
+    }
+    const targetStop = stopId ? trip.stops.find((s) => s.id === stopId) : trip.stops[0];
     setSelectedTargetDayNumber(dayNumber);
-    setSelectedTargetStopId(stopId || trip.stops[0]?.id);
+    setSelectedTargetStopId(targetStop?.id || trip.stops[0]?.id);
     setIsActivitySearchOpen(true);
   };
 
@@ -167,14 +174,25 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
     cost: number;
     notes?: string;
   }) => {
-    await createActivityMutation.mutateAsync({
-      stop_id: data.stopId,
-      activity_id: data.activityId || null,
-      day_number: data.dayNumber,
-      scheduled_time: data.scheduledTime || null,
-      cost: data.cost,
-      notes: data.notes || null,
-    });
+    const targetStopId = data.stopId || selectedTargetStopId || trip.stops[0]?.id;
+    if (!targetStopId) {
+      toast.error("Please add a destination city stop first.");
+      setIsCitySearchOpen(true);
+      return;
+    }
+    try {
+      await createActivityMutation.mutateAsync({
+        stop_id: targetStopId,
+        activity_id: data.activityId || null,
+        day_number: Number(data.dayNumber) || 1,
+        scheduled_time: data.scheduledTime || null,
+        cost: Number(data.cost) || 0,
+        notes: data.notes || null,
+      });
+      toast.success("Activity scheduled!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to schedule activity");
+    }
   };
 
   const handleToggleActivity = async (id: string, isCompleted: boolean) => {
