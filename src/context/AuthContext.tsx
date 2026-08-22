@@ -10,7 +10,6 @@ import type { User, Session } from "@supabase/supabase-js";
 import type { Profile } from "@/types/database";
 import {
   getCurrentSession,
-  getUserProfile,
   onAuthStateChange,
   signOut as authSignOut,
   signIn as authSignIn,
@@ -20,6 +19,8 @@ import {
   type SignUpParams,
 } from "@/services/auth/authService";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { useProfile, profileKeys, MOCK_DEVELOPMENT_PROFILE } from "@/hooks/useProfile";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AuthContextType {
   user: User | null;
@@ -47,7 +48,7 @@ const AuthContext = createContext<AuthContextType>({
   refreshProfile: async () => {},
 });
 
-// Mock user and profile for UI preview when no active Supabase credentials/session exist
+// Mock user for UI preview when no active Supabase credentials/session exist
 const MOCK_DEVELOPMENT_USER: User = {
   id: "dev-user-123",
   app_metadata: {},
@@ -57,51 +58,38 @@ const MOCK_DEVELOPMENT_USER: User = {
   email: "alex.traveler@example.com",
 };
 
-const MOCK_DEVELOPMENT_PROFILE: Profile = {
-  id: "dev-user-123",
-  email: "alex.traveler@example.com",
-  full_name: "Alex Traveler",
-  avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(
     isSupabaseConfigured ? null : MOCK_DEVELOPMENT_USER
   );
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(
-    isSupabaseConfigured ? null : MOCK_DEVELOPMENT_PROFILE
-  );
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    try {
-      const data = await getUserProfile(userId);
-      if (data) {
-        setProfile(data);
-      } else {
-        // Fallback profile if row not yet populated
-        setProfile({
-          id: userId,
-          email: user?.email ?? null,
-          full_name: (user?.user_metadata?.full_name as string) ?? null,
-          avatar_url: (user?.user_metadata?.avatar_url as string) ?? null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-      }
-    } catch (err) {
-      console.warn("Could not fetch user profile:", err);
-    }
-  }, [user]);
+  // TanStack Query handles fetching, caching, deduplication & staleTime for profile
+  const { data: profileData, refetch: refetchProfile } = useProfile(user?.id);
+
+  // Derive profile: cached query data, fallback metadata object, or mock development profile
+  const profile: Profile | null = !isSupabaseConfigured
+    ? MOCK_DEVELOPMENT_PROFILE
+    : profileData ??
+      (user
+        ? {
+            id: user.id,
+            email: user.email ?? null,
+            full_name: (user.user_metadata?.full_name as string) ?? null,
+            avatar_url: (user.user_metadata?.avatar_url as string) ?? null,
+            created_at: user.created_at ?? new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        : null);
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) {
-      await fetchProfile(user.id);
+      await queryClient.invalidateQueries({ queryKey: profileKeys.detail(user.id) });
+      await refetchProfile();
     }
-  }, [user, fetchProfile]);
+  }, [user, queryClient, refetchProfile]);
 
   useEffect(() => {
     let mounted = true;
@@ -113,21 +101,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (initialSession?.user) {
             setSession(initialSession);
             setUser(initialSession.user);
-            fetchProfile(initialSession.user.id);
           } else if (!isSupabaseConfigured) {
-            // Keep mock user for effortless local frontend exploration
             setUser(MOCK_DEVELOPMENT_USER);
-            setProfile(MOCK_DEVELOPMENT_PROFILE);
           } else {
             setUser(null);
-            setProfile(null);
           }
         }
       } catch (err) {
         console.warn("Supabase session initialization note:", err);
         if (mounted && !isSupabaseConfigured) {
           setUser(MOCK_DEVELOPMENT_USER);
-          setProfile(MOCK_DEVELOPMENT_PROFILE);
         }
       } finally {
         if (mounted) {
@@ -141,18 +124,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const {
         data: { subscription },
-      } = onAuthStateChange(async (_event, currentSession) => {
+      } = onAuthStateChange((_event, currentSession) => {
         if (mounted) {
           setSession(currentSession);
           if (currentSession?.user) {
             setUser(currentSession.user);
-            fetchProfile(currentSession.user.id);
           } else if (!isSupabaseConfigured) {
             setUser(MOCK_DEVELOPMENT_USER);
-            setProfile(MOCK_DEVELOPMENT_PROFILE);
           } else {
             setUser(null);
-            setProfile(null);
           }
           setLoading(false);
         }
@@ -167,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         mounted = false;
       };
     }
-  }, [fetchProfile]);
+  }, []); // Run once on mount
 
   const signOut = async () => {
     try {
@@ -177,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setUser(null);
     setSession(null);
-    setProfile(null);
+    queryClient.removeQueries({ queryKey: profileKeys.all });
   };
 
   const signIn = async (params: SignInParams) => {
@@ -185,7 +165,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (result.session?.user) {
       setUser(result.session.user);
       setSession(result.session);
-      await fetchProfile(result.session.user.id);
     }
     return result;
   };
@@ -195,7 +174,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (result.session?.user) {
       setUser(result.session.user);
       setSession(result.session);
-      await fetchProfile(result.session.user.id);
     }
     return result;
   };
