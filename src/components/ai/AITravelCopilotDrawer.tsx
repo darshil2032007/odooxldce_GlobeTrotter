@@ -16,6 +16,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { sendCopilotMessage, type CopilotChatMessage } from "@/services/ai/copilot";
+import { FormattedMarkdown } from "./FormattedMarkdown";
 import type { TripWithDetails } from "@/types/database";
 
 interface AITravelCopilotDrawerProps {
@@ -126,7 +127,7 @@ export function AITravelCopilotDrawer({
                   variant="outline"
                   className="border-amber-400/40 bg-amber-400/10 text-amber-300 text-[10px] py-0 px-1.5"
                 >
-                  Gemini Flash
+                  Gemini 3.5 Flash Lite
                 </Badge>
               </SheetTitle>
               <p className="text-[11px] text-surface-400 truncate max-w-[220px]">
@@ -152,15 +153,15 @@ export function AITravelCopilotDrawer({
                 )}
 
                 <div
-                  className={`max-w-[82%] rounded-2xl p-3 text-xs leading-relaxed shadow-sm ${
+                  className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed shadow-sm ${
                     isUser
                       ? "bg-primary-600 text-white rounded-br-none"
                       : "bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-200 border border-surface-200/80 dark:border-surface-800 rounded-bl-none"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <FormattedMarkdown content={msg.content} isUser={isUser} />
                   <span
-                    className={`block text-[10px] pt-1 text-right ${
+                    className={`block text-[10px] pt-1.5 text-right ${
                       isUser ? "text-white/70" : "text-surface-400"
                     }`}
                   >

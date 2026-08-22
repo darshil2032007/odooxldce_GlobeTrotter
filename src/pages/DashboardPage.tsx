@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { WelcomeSection } from "@/components/dashboard/WelcomeSection";
 import { PlanNewTripCTA } from "@/components/dashboard/PlanNewTripCTA";
-import { QuickActions } from "@/components/dashboard/QuickActions";
 import { BudgetSummaryCards } from "@/components/dashboard/BudgetSummaryCards";
 import { UpcomingTrips } from "@/components/dashboard/UpcomingTrips";
 import { RecentTrips } from "@/components/dashboard/RecentTrips";
@@ -43,9 +42,6 @@ export function DashboardPage() {
 
       {/* Primary CTA */}
       <PlanNewTripCTA />
-
-      {/* Quick Actions */}
-      <QuickActions />
 
       {/* Budget Summary Cards */}
       <BudgetSummaryCards summary={budgetSummary} />

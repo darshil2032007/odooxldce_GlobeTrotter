@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
+import { CurrencyProvider } from "@/context/CurrencyContext";
 import { Toaster } from "sonner";
 import { router } from "@/router";
 
@@ -21,8 +22,10 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RouterProvider router={router} />
-        <Toaster position="top-right" richColors closeButton />
+        <CurrencyProvider>
+          <RouterProvider router={router} />
+          <Toaster position="top-right" richColors closeButton />
+        </CurrencyProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

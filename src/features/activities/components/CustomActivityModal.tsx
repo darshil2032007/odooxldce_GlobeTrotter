@@ -42,7 +42,7 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
   onSave,
 }) => {
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("Custom Plan");
+  const [category, setCategory] = useState("Sightseeing");
   const [selectedStopId, setSelectedStopId] = useState<string>(
     defaultStopId || stops[0]?.id || ""
   );
@@ -53,15 +53,14 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (defaultStopId) {
-      setSelectedStopId(defaultStopId);
-    } else if (stops.length > 0) {
-      setSelectedStopId(stops[0].id);
-    } else {
-      setSelectedStopId("");
+    if (open) {
+      setSelectedStopId(defaultStopId || (stops.length > 0 ? stops[0].id : ""));
+      setDayNumber(defaultDayNumber || 1);
     }
-    setDayNumber(defaultDayNumber);
-  }, [defaultStopId, defaultDayNumber, stops]);
+  }, [open, defaultStopId, defaultDayNumber, stops]);
+
+  const effectiveStopId = selectedStopId || defaultStopId || (stops.length > 0 ? stops[0]?.id : "");
+  const hasStops = stops && stops.length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +68,7 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
       toast.error("Please enter an activity title.");
       return;
     }
-    if (!selectedStopId) {
+    if (!effectiveStopId) {
       toast.error("Please select a destination city stop.");
       return;
     }
@@ -77,11 +76,11 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
     try {
       setIsSubmitting(true);
       await onSave({
-        stopId: selectedStopId,
+        stopId: effectiveStopId,
         title: title.trim(),
         category,
-        cost: Number(cost),
-        dayNumber: Number(dayNumber),
+        cost: Number(cost) || 0,
+        dayNumber: Number(dayNumber) || 1,
         scheduledTime: scheduledTime || undefined,
         notes: notes.trim() || undefined,
       });
@@ -96,8 +95,6 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
       setIsSubmitting(false);
     }
   };
-
-  const hasStops = stops && stops.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -129,7 +126,7 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
               id="custom-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Sunset drinks at rooftop cafe"
+              placeholder="e.g. Sunset Dinner at Fisherman's Wharf"
               className="text-xs"
               required
             />
@@ -137,44 +134,43 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
 
           {/* Category */}
           <div className="space-y-1.5">
-            <Label htmlFor="custom-cat" className="text-xs font-medium">
+            <Label htmlFor="custom-category" className="text-xs font-medium">
               Category
             </Label>
             <select
-              id="custom-cat"
+              id="custom-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full h-9 px-3 rounded-md border border-input bg-background text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-background p-2 text-xs font-medium focus:border-primary-500 focus:outline-none"
             >
               <option value="Sightseeing">Sightseeing</option>
               <option value="Food & Dining">Food & Dining</option>
               <option value="Culture & History">Culture & History</option>
-              <option value="Adventure">Adventure</option>
-              <option value="Nature">Nature</option>
-              <option value="Relaxation">Relaxation</option>
-              <option value="Entertainment">Entertainment</option>
-              <option value="Custom Plan">Custom Plan</option>
+              <option value="Adventure">Adventure & Outdoors</option>
+              <option value="Relaxation">Relaxation & Leisure</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Entertainment">Entertainment & Nightlife</option>
             </select>
           </div>
 
-          {/* Target Stop */}
+          {/* Stop selector */}
           <div className="space-y-1.5">
-            <Label htmlFor="custom-stop" className="text-xs font-medium flex items-center gap-1.5">
+            <Label htmlFor="custom-stop" className="text-xs font-medium flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5 text-primary-500" />
-              City Destination Stop *
+              Destination City Stop *
             </Label>
             <select
               id="custom-stop"
-              value={selectedStopId}
+              value={effectiveStopId}
               onChange={(e) => setSelectedStopId(e.target.value)}
               disabled={!hasStops}
-              className="w-full h-9 px-3 rounded-md border border-input bg-background text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50"
+              className="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-background p-2 text-xs font-medium focus:border-primary-500 focus:outline-none disabled:opacity-50"
               required
             >
               {hasStops ? (
-                stops.map((stop) => (
-                  <option key={stop.id} value={stop.id}>
-                    Stop {stop.stop_order + 1}: {stop.city?.name || "City"} ({stop.city?.country || "Destination"})
+                stops.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.city?.name ? `${s.city.name}, ${s.city.country}` : `Stop ${s.stop_order + 1}`}
                   </option>
                 ))
               ) : (
@@ -183,10 +179,10 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {/* Day Number */}
+          {/* Schedule Timing & Day */}
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="custom-day" className="text-xs font-medium flex items-center gap-1.5">
+              <Label htmlFor="custom-day" className="text-xs font-medium flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5 text-primary-500" />
                 Itinerary Day
               </Label>
@@ -194,7 +190,7 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
                 id="custom-day"
                 value={dayNumber}
                 onChange={(e) => setDayNumber(Number(e.target.value))}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-lg border border-surface-200 dark:border-surface-800 bg-background p-2 text-xs font-medium focus:border-primary-500 focus:outline-none"
               >
                 {Array.from({ length: Math.max(totalTripDays, 1) }).map((_, i) => (
                   <option key={i + 1} value={i + 1}>
@@ -206,7 +202,7 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
 
             {/* Scheduled Time */}
             <div className="space-y-1.5">
-              <Label htmlFor="custom-time" className="text-xs font-medium flex items-center gap-1.5">
+              <Label htmlFor="custom-time" className="text-xs font-medium flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5 text-primary-500" />
                 Time
               </Label>
@@ -220,11 +216,11 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
             </div>
           </div>
 
-          {/* Cost */}
+          {/* Estimated Cost */}
           <div className="space-y-1.5">
-            <Label htmlFor="custom-cost" className="text-xs font-medium flex items-center gap-1.5">
+            <Label htmlFor="custom-cost" className="text-xs font-medium flex items-center gap-1">
               <DollarSign className="h-3.5 w-3.5 text-primary-500" />
-              Estimated Cost (USD)
+              Estimated Cost
             </Label>
             <Input
               id="custom-cost"
@@ -240,9 +236,9 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
 
           {/* Notes */}
           <div className="space-y-1.5">
-            <Label htmlFor="custom-notes" className="text-xs font-medium flex items-center gap-1.5">
+            <Label htmlFor="custom-notes" className="text-xs font-medium flex items-center gap-1">
               <FileText className="h-3.5 w-3.5 text-primary-500" />
-              Notes / Description
+              Notes / Location
             </Label>
             <Textarea
               id="custom-notes"
@@ -266,8 +262,8 @@ export const CustomActivityModal: React.FC<CustomActivityModalProps> = ({
             <Button
               type="submit"
               size="sm"
-              disabled={isSubmitting || !hasStops}
-              className="gap-1.5"
+              disabled={isSubmitting || !title.trim() || !effectiveStopId}
+              className="gap-1.5 bg-primary-600 hover:bg-primary-700 text-white font-bold"
             >
               <Check className="h-4 w-4" />
               {isSubmitting ? "Adding..." : "Add to Itinerary"}

@@ -5,13 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
+import { type CurrencyCode, CURRENCY_CONFIGS } from "@/context/CurrencyContext";
+
+export function formatCurrency(amount: number, overrideCurrency?: string): string {
+  const activeCode: CurrencyCode =
+    (overrideCurrency as CurrencyCode) ||
+    (localStorage.getItem("globetrotter_active_currency") as CurrencyCode) ||
+    "INR";
+
+  const cfg = CURRENCY_CONFIGS[activeCode] || CURRENCY_CONFIGS.INR;
+  const converted = (amount || 0) * cfg.rateFromINR;
+
+  return new Intl.NumberFormat(cfg.locale, {
     style: "currency",
-    currency,
+    currency: cfg.code,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(converted);
 }
 
 export function formatDateRange(start: string, end: string): string {

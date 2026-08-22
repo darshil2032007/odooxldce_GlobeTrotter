@@ -18,15 +18,35 @@ export interface AIResponseWrapper<T> {
 }
 
 /**
- * Unified invoker for Gemini AI.
- * 1. Tries Supabase Edge Function first (`gemini-travel-assistant`).
- * 2. If Edge Function is unavailable in local dev, directly invokes Google Gemini API via VITE_GEMINI_API_KEY.
- * 3. If offline, falls back to deterministic local synthesis.
+ * Unified invoker for Gemini Generative AI.
+ * 1. Invokes Google Gemini API directly using VITE_GEMINI_API_KEY for dynamic generative chat & reasoning.
+ * 2. Tries Supabase Edge Function if deployed.
+ * 3. Falls back to resilient local synthesis if offline.
  */
 export async function invokeGeminiAssistant<T>(
   params: InvokeAIParams
 ): Promise<AIResponseWrapper<T>> {
-  // 1. Try Supabase Edge Function
+  // 1. Direct Gemini API call with configured key
+  const directApiKey = (
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    import.meta.env.GEMINI_API_KEY ||
+    ""
+  ).trim();
+
+  if (directApiKey && directApiKey !== "undefined") {
+    try {
+      const directResult = await callGeminiDirectly<T>(params, directApiKey);
+      return {
+        success: true,
+        data: directResult,
+        source: "gemini-direct",
+      };
+    } catch (apiErr) {
+      console.warn("Direct Gemini API call error, evaluating backup options:", apiErr);
+    }
+  }
+
+  // 2. Try Supabase Edge Function
   try {
     const { data, error } = await supabase.functions.invoke(
       "gemini-travel-assistant",
@@ -43,26 +63,7 @@ export async function invokeGeminiAssistant<T>(
       };
     }
   } catch (edgeErr) {
-    console.debug("Edge function unavailable, evaluating direct API key...", edgeErr);
-  }
-
-  // 2. Direct Gemini API call if key is available in environment
-  const directApiKey = (
-    import.meta.env.VITE_GEMINI_API_KEY ||
-    ""
-  ).trim();
-
-  if (directApiKey && directApiKey !== "undefined") {
-    try {
-      const directResult = await callGeminiDirectly<T>(params, directApiKey);
-      return {
-        success: true,
-        data: directResult,
-        source: "gemini-direct",
-      };
-    } catch (apiErr) {
-      console.warn("Direct Gemini API call error:", apiErr);
-    }
+    console.debug("Edge function unavailable:", edgeErr);
   }
 
   // 3. Fallback to resilient local synthesis
@@ -75,35 +76,74 @@ export async function invokeGeminiAssistant<T>(
 }
 
 /**
- * Direct Google Gemini API caller for local development
+ * Direct Google Gemini API caller for real dynamic generative reasoning & chat
  */
 async function callGeminiDirectly<T>(
   params: InvokeAIParams,
   apiKey: string
 ): Promise<T> {
-  const modelName =
-    import.meta.env.VITE_GEMINI_MODEL || "gemini-2.5-flash";
+  const configuredModel =
+    import.meta.env.VITE_GEMINI_MODEL ||
+    import.meta.env.GEMINI_MODEL ||
+    "gemini-3.5-flash-lite";
+
+  // Candidate models verified working on this API key in order of priority:
+  const candidateModels = [
+    configuredModel,
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-flash-lite-latest",
+    "gemini-flash-latest",
+  ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+
   const { action, payload } = params;
 
   let systemInstruction = "";
-  let userPrompt = "";
+  let contents: { role: string; parts: { text: string }[] }[] = [];
   let isJsonExpected = true;
+  let temperature = 0.7;
 
   switch (action) {
+    case "trip-copilot": {
+      isJsonExpected = false;
+      temperature = 0.75; // Dynamic conversational creativity
+      systemInstruction = `You are GlobeTrotter AI's Expert Personal Travel Copilot & Concierge.
+You provide warm, dynamic, highly intelligent, engaging, and personalized travel advice.
+You have complete context of the traveler's multi-city itinerary, daily schedule, and verified budget numbers.
+Always give real, practical, and exciting suggestions (such as authentic local street food spots, sunset viewpoints, packing essentials tailored to the terrain/season, cultural etiquette, and pacing tips).
+Format your response nicely with markdown, bullet points, and bold text. Keep it concise yet richly informative.`;
+
+      const rawHistory = (payload.conversationHistory as { role: string; content: string }[]) || [];
+      const historyParts = rawHistory.map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      }));
+
+      const currentMessage = `[Trip Context]\n${JSON.stringify(payload.tripContext, null, 2)}\n\n[Traveler Question]\n${payload.message}`;
+
+      contents = [
+        ...historyParts,
+        {
+          role: "user",
+          parts: [{ text: currentMessage }],
+        },
+      ];
+      break;
+    }
+
     case "generate-trip": {
+      isJsonExpected = true;
+      temperature = 0.2;
       systemInstruction = `You are GlobeTrotter AI's Expert Travel Planner.
-Your job is to generate a comprehensive, realistic multi-city travel itinerary.
+Your job is to generate a comprehensive, realistic multi-city travel itinerary in valid JSON.
 CRITICAL RULES:
 1. Return ONLY valid JSON conforming to the exact schema.
 2. DO NOT invent database UUIDs.
 3. Respect user budget and duration strictly.`;
 
-      userPrompt = `User Request: "${payload.prompt}"
-User Constraints:
-- Target Budget: ₹${payload.targetBudget || "Flexible"}
-- Duration: ${payload.durationDays || "Flexible"} Days
-- Travel Style: ${payload.travelStyle || "Moderate"}
-- Interests: ${(payload.interests as string[] || []).join(", ") || "General Sightseeing"}
+      const prompt = `User Request: "${payload.prompt}"
+Constraints: Target Budget: ₹${payload.targetBudget || "Flexible"}, Duration: ${payload.durationDays || "Flexible"} Days, Style: ${payload.travelStyle || "Moderate"}, Interests: ${(payload.interests as string[] || []).join(", ") || "General Sightseeing"}
 ${payload.catalogSummary ? `Available Catalog Destinations:\n${payload.catalogSummary}` : ""}
 
 Return a JSON object in this exact format:
@@ -138,19 +178,16 @@ Return a JSON object in this exact format:
     }
   ]
 }`;
-      break;
-    }
 
-    case "trip-copilot": {
-      isJsonExpected = false;
-      systemInstruction = `You are GlobeTrotter AI's Personal Travel Copilot. Answer concisely based on the supplied trip context.`;
-      userPrompt = `Trip Context: ${JSON.stringify(payload.tripContext, null, 2)}\nUser Question: "${payload.message}"\nHistory: ${JSON.stringify(payload.conversationHistory || [])}`;
+      contents = [{ role: "user", parts: [{ text: prompt }] }];
       break;
     }
 
     case "optimize-trip": {
+      isJsonExpected = true;
+      temperature = 0.3;
       systemInstruction = `You are GlobeTrotter AI's Itinerary Optimization Engine. Suggest high-impact improvements.`;
-      userPrompt = `Goal: "${payload.goal || "Optimize for cost and better pacing"}"\nTrip Context: ${JSON.stringify(payload.tripContext, null, 2)}
+      const prompt = `Goal: "${payload.goal || "Optimize for cost and better pacing"}"\nTrip Context: ${JSON.stringify(payload.tripContext, null, 2)}
 Return JSON:
 {
   "summary": "Explanation",
@@ -170,62 +207,76 @@ Return JSON:
     }
   ]
 }`;
+      contents = [{ role: "user", parts: [{ text: prompt }] }];
       break;
     }
 
     case "budget-explanation": {
       isJsonExpected = false;
+      temperature = 0.5;
       systemInstruction = `You are GlobeTrotter AI's Financial Intelligence Advisor. Explain the deterministic budget numbers in 2-3 friendly paragraphs.`;
       const catObj = payload.mostExpensiveCategory as { category?: string; amount?: number } | null | undefined;
-      userPrompt = `Data: Target ₹${payload.targetBudget}, Spent ₹${payload.currentCost}, Deficit ₹${payload.deficit}, Top Category: ${catObj?.category || "Activities"} (₹${catObj?.amount || 0}), Potential Savings: ₹${payload.totalPotentialSavings || 0}`;
+      const prompt = `Data: Target ₹${payload.targetBudget}, Spent ₹${payload.currentCost}, Deficit ₹${payload.deficit}, Top Category: ${catObj?.category || "Activities"} (₹${catObj?.amount || 0}), Potential Savings: ₹${payload.totalPotentialSavings || 0}`;
+      contents = [{ role: "user", parts: [{ text: prompt }] }];
       break;
     }
 
     case "recommendation-explanation": {
       isJsonExpected = false;
+      temperature = 0.5;
       systemInstruction = `Write 1-2 sentence compelling reason why this destination scored highly.`;
-      userPrompt = `City: ${payload.cityName}, Match Score: ${payload.score}%, Budget: ₹${payload.targetBudget}, Style: ${payload.travelStyle}, Interests: ${(payload.interests as string[] || []).join(", ")}`;
+      const prompt = `City: ${payload.cityName}, Match Score: ${payload.score}%, Budget: ₹${payload.targetBudget}, Style: ${payload.travelStyle}, Interests: ${(payload.interests as string[] || []).join(", ")}`;
+      contents = [{ role: "user", parts: [{ text: prompt }] }];
       break;
     }
   }
 
-  // Choose appropriate endpoint model (fallback if non-standard model name)
-  const targetModel = modelName.startsWith("gemini") ? modelName : "gemini-2.5-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`;
+  let lastError: Error | null = null;
 
-  const requestBody = {
-    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-    systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
-    generationConfig: {
-      temperature: isJsonExpected ? 0.2 : 0.7,
-      responseMimeType: isJsonExpected ? "application/json" : "text/plain",
-    },
-  };
+  for (const model of candidateModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(requestBody),
-  });
+      const requestBody = {
+        contents,
+        systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
+        generationConfig: {
+          temperature,
+          responseMimeType: isJsonExpected ? "application/json" : "text/plain",
+        },
+      };
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini API call failed (${res.status}): ${errText}`);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Gemini (${model}) error ${res.status}: ${errText}`);
+      }
+
+      const json = await res.json();
+      const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+      if (isJsonExpected) {
+        const cleaned = rawText
+          .replace(/^```json\s*/i, "")
+          .replace(/^```\s*/i, "")
+          .replace(/\s*```$/i, "")
+          .trim();
+        return JSON.parse(cleaned) as T;
+      }
+
+      return rawText as unknown as T;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.debug(`Model ${model} failed, trying next candidate...`, err);
+    }
   }
 
-  const json = await res.json();
-  const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-  if (isJsonExpected) {
-    const cleaned = rawText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-    return JSON.parse(cleaned) as T;
-  }
-
-  return rawText as unknown as T;
+  throw lastError || new Error("Failed to invoke Gemini API");
 }
 
 /**
@@ -235,6 +286,17 @@ function generateLocalAIFallback<T>(params: InvokeAIParams): T {
   const { action, payload } = params;
 
   switch (action) {
+    case "trip-copilot": {
+      const q = String(payload.message || "").toLowerCase();
+      if (q.includes("budget") || q.includes("expensive") || q.includes("money") || q.includes("cost")) {
+        return "I've reviewed your verified budget breakdown. Reviewing the Smart Budget Assistant recommendations can help you trim non-essential costs while keeping your trip memorable!" as unknown as T;
+      }
+      if (q.includes("pack") || q.includes("bring") || q.includes("clothes")) {
+        return "For your destinations, pack comfortable walking shoes, breathable cotton or linen clothing, a light evening layer, sun protection (sunglasses, hat, sunscreen), and a reusable water bottle." as unknown as T;
+      }
+      return "I've reviewed your trip itinerary! Your schedule has a great balance of landmark experiences and leisure. What specific tips or recommendations can I help you with?" as unknown as T;
+    }
+
     case "generate-trip": {
       const prompt = String(payload.prompt || "Expedition");
       const duration = Number(payload.durationDays || 5);
@@ -297,7 +359,8 @@ function generateLocalAIFallback<T>(params: InvokeAIParams): T {
       const deficit = Number(payload.deficit || 0);
       const targetBudget = Number(payload.targetBudget || 0);
       const currentCost = Number(payload.currentCost || 0);
-      const topCategory = (payload.mostExpensiveCategory as { category: string })?.category || "Activities";
+      const catObj = payload.mostExpensiveCategory as { category?: string; amount?: number } | null | undefined;
+      const topCategory = catObj?.category || "Activities";
       const totalSavings = Number(payload.totalPotentialSavings || 0);
 
       if (deficit > 0) {
@@ -325,17 +388,6 @@ function generateLocalAIFallback<T>(params: InvokeAIParams): T {
           },
         ],
       } as unknown as T;
-    }
-
-    case "trip-copilot": {
-      const q = String(payload.message || "").toLowerCase();
-      if (q.includes("budget") || q.includes("expensive") || q.includes("money") || q.includes("cost")) {
-        return "Based on your verified budget breakdown, your spending is highest on Day 4 and in the Activities category. Reviewing the Smart Budget Assistant recommendations can help you trim non-essential costs while keeping your trip memorable!" as unknown as T;
-      }
-      if (q.includes("pack") || q.includes("bring") || q.includes("clothes")) {
-        return "For your destinations, pack comfortable walking shoes for palace stepwells and forts, breathable cotton or linen clothing, a light evening layer, sun protection (sunglasses, hat, sunscreen), and a reusable water bottle." as unknown as T;
-      }
-      return "I've reviewed your trip itinerary! Your schedule has a great balance of cultural landmarks and leisure time. Feel free to ask about local cuisine recommendations, packing essentials, or budget optimizations!" as unknown as T;
     }
 
     case "recommendation-explanation": {

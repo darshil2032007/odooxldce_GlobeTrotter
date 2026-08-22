@@ -52,9 +52,10 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
   const [notes, setNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Sync state whenever modal opens or inputs change
   useEffect(() => {
-    if (activity) {
-      setCost(activity.estimated_cost);
+    if (open && activity) {
+      setCost(activity.estimated_cost ?? 0);
       if (defaultStopId) {
         setSelectedStopId(defaultStopId);
       } else if (stops.length > 0) {
@@ -63,15 +64,18 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
       } else {
         setSelectedStopId("");
       }
-      setDayNumber(defaultDayNumber);
+      setDayNumber(defaultDayNumber || 1);
     }
-  }, [activity, defaultStopId, defaultDayNumber, stops]);
+  }, [open, activity, defaultStopId, defaultDayNumber, stops]);
 
   if (!activity) return null;
 
+  const effectiveStopId = selectedStopId || defaultStopId || stops[0]?.id || "";
+  const hasStops = stops && stops.length > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedStopId) {
+    if (!effectiveStopId) {
       toast.error("Please select a destination stop for this activity.");
       return;
     }
@@ -79,11 +83,11 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
     try {
       setIsSubmitting(true);
       await onSchedule({
-        stopId: selectedStopId,
+        stopId: effectiveStopId,
         activityId: activity.id,
-        dayNumber: Number(dayNumber),
+        dayNumber: Number(dayNumber) || 1,
         scheduledTime: scheduledTime || undefined,
-        cost: Number(cost),
+        cost: Number(cost) || 0,
         notes: notes.trim() || undefined,
       });
       toast.success(`Scheduled "${activity.title}" for Day ${dayNumber}`);
@@ -94,8 +98,6 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
       setIsSubmitting(false);
     }
   };
-
-  const hasStops = stops && stops.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,10 +129,10 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
               </Badge>
               <span className="text-xs text-surface-500">{activity.duration_hours}h duration</span>
             </div>
-            <h4 className="font-semibold text-sm text-surface-900 dark:text-surface-100 truncate mt-0.5">
+            <h4 className="font-bold text-sm text-surface-900 dark:text-surface-100 truncate mt-0.5">
               {activity.title}
             </h4>
-            <span className="text-xs font-semibold text-primary-600">
+            <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">
               Est. Cost: {activity.estimated_cost === 0 ? "Free" : `$${activity.estimated_cost}`}
             </span>
           </div>
@@ -152,7 +154,7 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
             </Label>
             <select
               id="sched-stop"
-              value={selectedStopId}
+              value={effectiveStopId}
               onChange={(e) => setSelectedStopId(e.target.value)}
               disabled={!hasStops}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50"
@@ -211,7 +213,7 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
           <div className="space-y-1.5">
             <Label htmlFor="sched-cost" className="text-xs font-medium flex items-center gap-1.5">
               <DollarSign className="h-3.5 w-3.5 text-primary-500" />
-              Planned Expense / Cost (USD)
+              Planned Expense / Cost
             </Label>
             <Input
               id="sched-cost"
@@ -253,11 +255,11 @@ export const ActivityScheduleModal: React.FC<ActivityScheduleModalProps> = ({
             <Button
               type="submit"
               size="sm"
-              disabled={isSubmitting || !hasStops}
-              className="gap-1.5"
+              disabled={isSubmitting || !effectiveStopId}
+              className="gap-1.5 bg-primary-600 hover:bg-primary-700 text-white font-bold"
             >
               <Check className="h-4 w-4" />
-              {isSubmitting ? "Scheduling..." : "Confirm Schedule"}
+              {isSubmitting ? "Scheduling..." : "Add to Itinerary"}
             </Button>
           </div>
         </form>
