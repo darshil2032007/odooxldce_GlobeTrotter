@@ -5,4 +5,5 @@ export * from "./components/ActivityScheduleModal";
 export * from "./components/CustomActivityModal";
 export * from "./components/ActivityItem";
 export * from "./hooks/useActivities";
+export * from "./utils/categoryColors";
 export * from "./data/fallbackActivities";

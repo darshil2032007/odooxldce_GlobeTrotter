@@ -6,7 +6,6 @@ import {
   Clock,
   Share2,
   Users,
-  Compass,
   Wallet,
 } from "lucide-react";
 import { useTrip } from "@/hooks/useTrips";
@@ -18,6 +17,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency, formatDateRange, getTripDuration } from "@/lib/utils";
+import { ItineraryBuilder } from "@/features/itinerary";
 
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -206,22 +206,9 @@ export function TripDetailPage() {
           </Card>
         </TabsContent>
 
-        {/* Itinerary Tab — Reserved for Developer 3 */}
+        {/* Itinerary Tab */}
         <TabsContent value="itinerary" className="mt-6">
-          <Card className="border-dashed border-2 border-surface-200 bg-surface-50/50">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="rounded-2xl bg-primary-50 p-4 mb-4">
-                <Compass className="h-10 w-10 text-primary-500" />
-              </div>
-              <h3 className="text-lg font-bold text-surface-800">Itinerary Builder Engine</h3>
-              <p className="text-sm text-surface-500 max-w-md mt-1 mb-4">
-                This space is reserved for Developer 3 to integrate multi-city stops, daily schedules, activities, and routing logic.
-              </p>
-              <Badge variant="outline" className="text-xs text-surface-500">
-                Developer 3 Integration Slot
-              </Badge>
-            </CardContent>
-          </Card>
+          <ItineraryBuilder tripId={id || trip.id} />
         </TabsContent>
 
         {/* Budget Tab — Reserved for Developer 4 */}

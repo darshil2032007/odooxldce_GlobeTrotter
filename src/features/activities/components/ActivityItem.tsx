@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { getCategoryColor } from "./ActivityCard";
+import { getCategoryColor } from "../utils/categoryColors";
 import {
   Dialog,
   DialogContent,
