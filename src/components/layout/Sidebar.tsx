@@ -5,6 +5,7 @@ import {
   PlusCircle,
   Building2,
   Sparkles,
+  User as UserIcon,
   Settings,
   Globe,
   ChevronLeft,
@@ -24,6 +25,7 @@ const navItems = [
   { label: "Create Trip", href: "/trips/new", icon: PlusCircle },
   { label: "Explore Cities", href: "/cities", icon: Building2 },
   { label: "Things to Do", href: "/activities", icon: Sparkles },
+  { label: "My Profile", href: "/profile", icon: UserIcon },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
