@@ -18,6 +18,7 @@ import { DayListView } from "./DayListView";
 import { StopsManager } from "./StopsManager";
 import { ActivitySearchDialog } from "@/features/activities/components/ActivitySearchDialog";
 import { CitySearchDialog } from "@/features/cities/components/CitySearchDialog";
+import { ItineraryCalendarView } from "@/features/calendar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageLoader } from "@/components/ui/LoadingSpinner";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -285,18 +286,15 @@ export const ItineraryBuilder: React.FC<ItineraryBuilderProps> = ({
           />
         </TabsContent>
 
-        {/* Tab 3: Timeline & Calendar (rendered directly or via calendar feature) */}
-        <TabsContent value="timeline" className="mt-4" id="timeline-tab-slot">
-          {/* Will render ItineraryCalendarView here */}
-          <div className="space-y-4">
-            <DayListView
-              days={enrichedDays}
-              onAddActivityToDay={handleOpenActivitySearchForDay}
-              onToggleComplete={handleToggleActivity}
-              onDeleteActivity={handleDeleteActivity}
-              onUpdateActivity={handleUpdateActivity}
-            />
-          </div>
+        {/* Tab 3: Timeline & Calendar */}
+        <TabsContent value="timeline" className="mt-4">
+          <ItineraryCalendarView
+            days={enrichedDays}
+            onAddActivityToDay={handleOpenActivitySearchForDay}
+            onToggleComplete={handleToggleActivity}
+            onDeleteActivity={handleDeleteActivity}
+            onUpdateActivity={handleUpdateActivity}
+          />
         </TabsContent>
       </Tabs>
 
