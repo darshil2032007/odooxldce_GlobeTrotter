@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,6 +10,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useTrip } from "@/hooks/useTrips";
+import { useTripDetails } from "@/features/itinerary/hooks/useItinerary";
 import { PageLoader } from "@/components/ui/LoadingSpinner";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Badge } from "@/components/ui/badge";
@@ -19,13 +21,16 @@ import { Progress } from "@/components/ui/progress";
 import { formatCurrency, formatDateRange, getTripDuration } from "@/lib/utils";
 import { ItineraryBuilder } from "@/features/itinerary";
 import { BudgetOverview } from "@/features/budget";
+import { TripSharingTab, ShareTripDialog } from "@/features/sharing";
 
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "overview";
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   const { data: trip, isLoading, isError, refetch } = useTrip(id || "");
+  const { data: tripDetails } = useTripDetails(id || "");
 
   if (isLoading) {
     return <PageLoader />;
@@ -67,7 +72,12 @@ export function TripDetailPage() {
         </Button>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setIsShareDialogOpen(true)}
+          >
             <Share2 className="h-3.5 w-3.5" />
             Share Trip
           </Button>
@@ -230,22 +240,40 @@ export function TripDetailPage() {
 
         {/* Sharing Tab */}
         <TabsContent value="sharing" className="mt-6">
-          <Card className="border-dashed border-2 border-surface-200 bg-surface-50/50">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="rounded-2xl bg-purple-50 p-4 mb-4">
-                <Users className="h-10 w-10 text-purple-500" />
-              </div>
-              <h3 className="text-lg font-bold text-surface-800">Trip Collaboration & Sharing</h3>
-              <p className="text-sm text-surface-500 max-w-md mt-1 mb-4">
-                This space is reserved for Developer 4 to integrate co-planner invites, permissions, and trip sharing options.
-              </p>
-              <Badge variant="outline" className="text-xs text-surface-500">
-                Developer 4 Integration Slot
-              </Badge>
-            </CardContent>
-          </Card>
+          {tripDetails ? (
+            <TripSharingTab trip={tripDetails} />
+          ) : (
+            <TripSharingTab
+              trip={
+                {
+                  id: trip.id,
+                  user_id: "",
+                  title: trip.name,
+                  description: trip.description || null,
+                  start_date: trip.startDate,
+                  end_date: trip.endDate,
+                  target_budget: trip.budgetTarget,
+                  cover_image_url: trip.coverImage || null,
+                  is_public: false,
+                  share_slug: null,
+                  created_at: trip.createdAt,
+                  updated_at: trip.createdAt,
+                  stops: [],
+                } as any
+              }
+            />
+          )}
         </TabsContent>
       </Tabs>
+
+      {/* Share Trip Dialog */}
+      {tripDetails && (
+        <ShareTripDialog
+          trip={tripDetails}
+          open={isShareDialogOpen}
+          onOpenChange={setIsShareDialogOpen}
+        />
+      )}
     </div>
   );
 }

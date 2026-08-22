@@ -13,6 +13,7 @@ import { TripDetailPage } from "@/pages/TripDetailPage";
 import { CitiesPage } from "@/pages/CitiesPage";
 import { ActivitiesPage } from "@/pages/ActivitiesPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { PublicTripPage } from "@/pages/PublicTripPage";
 
 export const router = createBrowserRouter([
   // Public routes
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
       { path: "/login", element: <LoginPage /> },
       { path: "/signup", element: <SignupPage /> },
       { path: "/forgot-password", element: <ForgotPasswordPage /> },
+      { path: "/share/:slug", element: <PublicTripPage /> },
     ],
   },
   // Authenticated app shell routes
