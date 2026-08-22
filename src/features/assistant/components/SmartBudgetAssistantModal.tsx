@@ -18,6 +18,7 @@ import { formatCurrency } from "@/lib/utils";
 import { getActivities } from "@/services/data/activities";
 import { updateStopActivity } from "@/services/data/stopActivities";
 import { generateBudgetSuggestions } from "@/features/budget/engine/assistantEngine";
+import { getAIBudgetExplanation } from "@/services/ai/budgetExplanation";
 import type { TripWithDetails } from "@/types/database";
 import type { TripBudgetCalculation } from "@/features/budget/types";
 import type { BudgetSuggestion } from "../types";
@@ -59,6 +60,15 @@ export function SmartBudgetAssistantModal({
     budget,
     catalogActivities
   );
+
+  const { data: aiExplanation, isLoading: isLoadingAIExplanation } = useQuery({
+    queryKey: ["ai-budget-explanation", trip.id, budget.total, budget.targetBudget],
+    queryFn: async () => {
+      return await getAIBudgetExplanation(analysis);
+    },
+    enabled: open,
+    staleTime: 1000 * 60 * 5,
+  });
 
   const applyReplacementMutation = useMutation({
     mutationFn: async (suggestion: BudgetSuggestion) => {
@@ -149,8 +159,15 @@ export function SmartBudgetAssistantModal({
                 </div>
               )}
             </div>
-            <p className="text-xs text-white/85 leading-relaxed">
-              {analysis.summaryMessage}
+            <p className="text-xs text-white/90 leading-relaxed bg-black/20 p-2.5 rounded-lg border border-white/10">
+              {isLoadingAIExplanation ? (
+                <span className="flex items-center gap-1.5 text-amber-300">
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  Generating Gemini AI financial explanation...
+                </span>
+              ) : (
+                aiExplanation || analysis.summaryMessage
+              )}
             </p>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-white/10 text-[11px] text-surface-300">

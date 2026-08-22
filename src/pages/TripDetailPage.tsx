@@ -6,6 +6,7 @@ import {
   MapPin,
   Clock,
   Share2,
+  Sparkles,
 } from "lucide-react";
 import { useTrip } from "@/hooks/useTrips";
 import { useTripDetails } from "@/features/itinerary/hooks/useItinerary";
@@ -20,12 +21,16 @@ import { formatCurrency, formatDateRange, getTripDuration } from "@/lib/utils";
 import { ItineraryBuilder } from "@/features/itinerary";
 import { BudgetOverview } from "@/features/budget";
 import { TripSharingTab, ShareTripDialog } from "@/features/sharing";
+import { AITravelCopilotDrawer } from "@/components/ai/AITravelCopilotDrawer";
+import { AIOptimizeTripModal } from "@/components/ai/AIOptimizeTripModal";
 
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "overview";
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [isOptimizeModalOpen, setIsOptimizeModalOpen] = useState(false);
 
   const { data: trip, isLoading, isError, refetch } = useTrip(id || "");
   const { data: tripDetails } = useTripDetails(id || "");
@@ -70,6 +75,18 @@ export function TripDetailPage() {
         </Button>
 
         <div className="flex items-center gap-2">
+          {tripDetails && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-primary-500/30 text-primary-600 dark:text-primary-400 hover:bg-primary-500/10 font-semibold"
+              onClick={() => setIsOptimizeModalOpen(true)}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              ✨ Optimize Trip
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="sm"
@@ -264,12 +281,45 @@ export function TripDetailPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Floating Copilot Launcher Button */}
+      {tripDetails && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <Button
+            onClick={() => setIsCopilotOpen(true)}
+            className="rounded-full h-12 px-5 gap-2.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all ring-2 ring-white/20"
+          >
+            <div className="rounded-full bg-amber-400/20 p-1 text-amber-300">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <span>Ask Copilot</span>
+          </Button>
+        </div>
+      )}
+
       {/* Share Trip Dialog */}
       {tripDetails && (
         <ShareTripDialog
           trip={tripDetails}
           open={isShareDialogOpen}
           onOpenChange={setIsShareDialogOpen}
+        />
+      )}
+
+      {/* AI Copilot Drawer */}
+      {tripDetails && (
+        <AITravelCopilotDrawer
+          trip={tripDetails}
+          open={isCopilotOpen}
+          onOpenChange={setIsCopilotOpen}
+        />
+      )}
+
+      {/* AI Optimize Trip Modal */}
+      {tripDetails && (
+        <AIOptimizeTripModal
+          trip={tripDetails}
+          open={isOptimizeModalOpen}
+          onOpenChange={setIsOptimizeModalOpen}
         />
       )}
     </div>

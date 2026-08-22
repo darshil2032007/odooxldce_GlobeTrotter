@@ -1,21 +1,55 @@
-import { MapPin, Sparkles, Compass } from "lucide-react";
+import { useState } from "react";
+import { MapPin, Sparkles, Compass, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import type { ScoredDestination } from "../types";
+import { getAIDestinationExplanation } from "@/services/ai/recommendationExplanation";
+import type { ScoredDestination, UserPreferences } from "../types";
 import { Link } from "react-router-dom";
 
 interface ScoredDestinationCardProps {
   destination: ScoredDestination;
+  preferences?: UserPreferences;
   onSelect?: (destination: ScoredDestination) => void;
 }
 
 export function ScoredDestinationCard({
   destination,
+  preferences,
   onSelect,
 }: ScoredDestinationCardProps) {
   const { city, score, breakdown, estimatedTotalCost, estimatedDailyCost, matchingInterests } = destination;
+  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [isAIExpanded, setIsAIExpanded] = useState(false);
+
+  const handleFetchAIExplanation = async () => {
+    if (aiExplanation) {
+      setIsAIExpanded(!isAIExpanded);
+      return;
+    }
+    setIsLoadingAI(true);
+    setIsAIExpanded(true);
+    try {
+      const expl = await getAIDestinationExplanation(
+        destination,
+        preferences || {
+          targetBudget: estimatedTotalCost,
+          durationDays: 5,
+          travelStyle: "moderate",
+          interests: matchingInterests,
+        }
+      );
+      setAiExplanation(expl);
+    } catch {
+      setAiExplanation(
+        `${city.name} fits your selected travel criteria with a ${score}% compatibility score.`
+      );
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
 
   const getScoreColor = () => {
     if (score >= 85) return "text-emerald-500 border-emerald-500/30 bg-emerald-500/10";
@@ -123,6 +157,39 @@ export function ScoredDestinationCard({
             ))}
           </div>
         )}
+
+        {/* Gemini AI Match Reasoning Accordion */}
+        <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-2 text-xs space-y-1.5">
+          <button
+            type="button"
+            onClick={handleFetchAIExplanation}
+            className="w-full flex items-center justify-between text-[11px] font-bold text-amber-700 dark:text-amber-400"
+          >
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="h-3 w-3" />
+              Why this matches you (Gemini AI)
+            </span>
+            {isLoadingAI ? (
+              <RefreshCw className="h-3 w-3 animate-spin" />
+            ) : isAIExpanded ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
+          </button>
+
+          {isAIExpanded && (
+            <div className="text-[11px] text-surface-700 dark:text-surface-300 leading-relaxed pt-1 border-t border-amber-400/10">
+              {isLoadingAI ? (
+                <span className="italic text-surface-400">
+                  Synthesizing personalized match reasoning...
+                </span>
+              ) : (
+                aiExplanation
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Action Button */}
         <div className="pt-2">

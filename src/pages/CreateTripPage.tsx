@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { useCreateTrip } from "@/hooks/useTrips";
+import { AITripGeneratorModal } from "@/components/ai/AITripGeneratorModal";
 import { toast } from "sonner";
 
 export function CreateTripPage() {
   const navigate = useNavigate();
   const createTripMutation = useCreateTrip();
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -94,7 +96,40 @@ export function CreateTripPage() {
 
       <PageHeader
         title="Plan a New Trip"
-        description="Fill out the basic details below to initialize your multi-city travel itinerary."
+        description="Fill out the basic details below or let Gemini AI craft a personalized multi-city itinerary for you."
+      />
+
+      {/* Plan with AI Banner */}
+      <div className="relative overflow-hidden rounded-2xl border border-primary-500/30 bg-gradient-to-r from-primary-950/40 via-surface-900/90 to-indigo-950/40 p-5 shadow-lg backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="rounded-xl bg-amber-400/20 p-2.5 text-amber-300 ring-1 ring-amber-400/30">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white tracking-wide">
+                Plan with Gemini AI
+              </h3>
+              <p className="text-xs text-surface-300 mt-0.5 max-w-md">
+                Describe your dream vacation in plain words. AI will synthesize stops, daily schedules, and estimated costs matched to verified destinations.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            onClick={() => setIsAIModalOpen(true)}
+            className="w-full sm:w-auto shrink-0 gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-surface-950 font-bold shadow-md hover:shadow-orange-500/20"
+          >
+            <Sparkles className="h-4 w-4" />
+            ✨ Plan with AI
+          </Button>
+        </div>
+      </div>
+
+      <AITripGeneratorModal
+        open={isAIModalOpen}
+        onOpenChange={setIsAIModalOpen}
       />
 
       <form onSubmit={handleSubmit}>

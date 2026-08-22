@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { PlusCircle, Map, LayoutGrid, List } from "lucide-react";
+import { PlusCircle, LayoutGrid, List, Sparkles, Map } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
 import { TripCard } from "@/components/trips/TripCard";
@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTrips, useDeleteTrip } from "@/hooks/useTrips";
 import { useAuth } from "@/hooks/useAuth";
 import { cloneTrip } from "@/features/sharing";
+import { AITripGeneratorModal } from "@/components/ai/AITripGeneratorModal";
 import { toast } from "sonner";
 import type { TripCardData } from "@/types";
 
@@ -18,6 +19,7 @@ export function TripsPage() {
   const navigate = useNavigate();
   const { data: trips, isLoading, isError, refetch } = useTrips();
   const deleteTripMutation = useDeleteTrip();
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -122,6 +124,15 @@ export function TripsPage() {
               </button>
             </div>
 
+            <Button
+              variant="outline"
+              onClick={() => setIsAIModalOpen(true)}
+              className="gap-2 text-xs font-semibold border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 shadow-sm"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              ✨ Plan with AI
+            </Button>
+
             <Button asChild className="gap-2 shadow-md">
               <Link to="/trips/new">
                 <PlusCircle className="h-4 w-4" />
@@ -130,6 +141,11 @@ export function TripsPage() {
             </Button>
           </div>
         }
+      />
+
+      <AITripGeneratorModal
+        open={isAIModalOpen}
+        onOpenChange={setIsAIModalOpen}
       />
 
       {/* Filters & Search */}

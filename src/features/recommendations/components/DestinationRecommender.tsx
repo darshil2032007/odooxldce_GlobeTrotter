@@ -223,6 +223,7 @@ export function DestinationRecommender({
             <ScoredDestinationCard
               key={destination.city.id}
               destination={destination}
+              preferences={preferences}
               onSelect={onSelectDestination}
             />
           ))}
