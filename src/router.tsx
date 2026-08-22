@@ -12,6 +12,7 @@ import { CreateTripPage } from "@/pages/CreateTripPage";
 import { TripDetailPage } from "@/pages/TripDetailPage";
 import { CitiesPage } from "@/pages/CitiesPage";
 import { ActivitiesPage } from "@/pages/ActivitiesPage";
+import { SettingsPage } from "@/pages/SettingsPage";
 
 export const router = createBrowserRouter([
   // Public routes
@@ -38,8 +39,7 @@ export const router = createBrowserRouter([
       { path: "/trips/:id", element: <TripDetailPage /> },
       { path: "/cities", element: <CitiesPage /> },
       { path: "/activities", element: <ActivitiesPage /> },
-      // Fallback for settings or unhandled inside shell
-      { path: "/settings", element: <DashboardPage /> },
+      { path: "/settings", element: <SettingsPage /> },
     ],
   },
   // Global 404 / Catch-all
