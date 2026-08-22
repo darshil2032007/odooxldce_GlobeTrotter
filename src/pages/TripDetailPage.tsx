@@ -18,6 +18,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency, formatDateRange, getTripDuration } from "@/lib/utils";
 import { ItineraryBuilder } from "@/features/itinerary";
+import { BudgetOverview } from "@/features/budget";
 
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -224,20 +225,7 @@ export function TripDetailPage() {
 
         {/* Budget Tab */}
         <TabsContent value="budget" className="mt-6">
-          <Card className="border-dashed border-2 border-surface-200 bg-surface-50/50">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="rounded-2xl bg-amber-50 p-4 mb-4">
-                <Wallet className="h-10 w-10 text-accent-500" />
-              </div>
-              <h3 className="text-lg font-bold text-surface-800">Smart Budget Assistant</h3>
-              <p className="text-sm text-surface-500 max-w-md mt-1 mb-4">
-                This space is reserved for Developer 4 to integrate expense tracking, currency conversions, and Smart Budget AI recommendations.
-              </p>
-              <Badge variant="outline" className="text-xs text-surface-500">
-                Developer 4 Integration Slot
-              </Badge>
-            </CardContent>
-          </Card>
+          <BudgetOverview tripId={id || trip.id} />
         </TabsContent>
 
         {/* Sharing Tab */}
