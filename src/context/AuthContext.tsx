@@ -9,7 +9,6 @@ import {
 import type { User, Session } from "@supabase/supabase-js";
 import type { Profile } from "@/types/database";
 import {
-  getCurrentSession,
   onAuthStateChange,
   signOut as authSignOut,
   signIn as authSignIn,
@@ -27,7 +26,6 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  isConfigured: boolean;
   signOut: () => Promise<void>;
   signIn: (params: SignInParams) => Promise<{ user: User | null; session: Session | null }>;
   signUp: (params: SignUpParams) => Promise<{ user: User | null; session: Session | null }>;
@@ -40,7 +38,6 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   profile: null,
   loading: true,
-  isConfigured: false,
   signOut: async () => {},
   signIn: async () => ({ user: null, session: null }),
   signUp: async () => ({ user: null, session: null }),
@@ -94,48 +91,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    async function initAuth() {
-      try {
-        const initialSession = await getCurrentSession();
-        if (mounted) {
-          if (initialSession?.user) {
-            setSession(initialSession);
-            setUser(initialSession.user);
-          } else if (!isSupabaseConfigured) {
-            setUser(MOCK_DEVELOPMENT_USER);
-          } else {
-            setUser(null);
-          }
-        }
-      } catch (err) {
-        console.warn("Supabase session initialization note:", err);
-        if (mounted && !isSupabaseConfigured) {
-          setUser(MOCK_DEVELOPMENT_USER);
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    initAuth();
-
     try {
       const {
         data: { subscription },
       } = onAuthStateChange((_event, currentSession) => {
-        if (mounted) {
-          setSession(currentSession);
-          if (currentSession?.user) {
-            setUser(currentSession.user);
-          } else if (!isSupabaseConfigured) {
-            setUser(MOCK_DEVELOPMENT_USER);
-          } else {
-            setUser(null);
-          }
-          setLoading(false);
+        if (!mounted) return;
+
+        setSession(currentSession);
+        if (currentSession?.user) {
+          setUser(currentSession.user);
+        } else if (!isSupabaseConfigured) {
+          setUser(MOCK_DEVELOPMENT_USER);
+        } else {
+          setUser(null);
         }
+        setLoading(false);
       });
 
       return () => {
@@ -143,11 +113,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         subscription.unsubscribe();
       };
     } catch {
+      if (mounted) setLoading(false);
       return () => {
         mounted = false;
       };
     }
-  }, []); // Run once on mount
+  }, []);
 
   const signOut = async () => {
     try {
@@ -189,7 +160,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         loading,
-        isConfigured: isSupabaseConfigured,
         signOut,
         signIn,
         signUp,
