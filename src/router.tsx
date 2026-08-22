@@ -12,6 +12,7 @@ import { CreateTripPage } from "@/pages/CreateTripPage";
 import { TripDetailPage } from "@/pages/TripDetailPage";
 import { CitiesPage } from "@/pages/CitiesPage";
 import { ActivitiesPage } from "@/pages/ActivitiesPage";
+import { ProfilePage } from "@/pages/ProfilePage";
 import { SettingsPage } from "@/pages/SettingsPage";
 
 export const router = createBrowserRouter([
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
       { path: "/trips/:id", element: <TripDetailPage /> },
       { path: "/cities", element: <CitiesPage /> },
       { path: "/activities", element: <ActivitiesPage /> },
+      { path: "/profile", element: <ProfilePage /> },
       { path: "/settings", element: <SettingsPage /> },
     ],
   },
